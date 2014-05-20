@@ -24,6 +24,9 @@ namespace o2dtk
 		// A list of the tile sets used by the tiled map
 		public List<TileSet> tileSets = null;
 
+		// A list of the layers in the tiled map
+		public List<TiledLayer> layers = null;
+
 		public void LoadTiledMap()
 		{
 			ClearTileMap();
@@ -32,8 +35,6 @@ namespace o2dtk
 			string tiled_map_dir = Path.GetDirectoryName(tiled_map_path);
 
 			XmlReader reader = XmlReader.Create(tiled_map_path);
-
-			string current_layer;
 
 			while (reader.Read())
 			{
@@ -56,19 +57,48 @@ namespace o2dtk
 
 							break;
 						case "layer":
-							// TODO pick up here
-							current_layer = reader.GetAttribute("name");
-							break;
-						case "data":
+							string layer_name = reader.GetAttribute("name");
+							int layer_width = int.Parse(reader.GetAttribute("width"));
+							int layer_height = int.Parse(reader.GetAttribute("height"));
+							TiledLayer layer = new TiledLayer(layer_name, layer_width, layer_height);
+
+							while (reader.Read())
+							{
+								if (reader.NodeType == XmlNodeType.EndElement)
+									if (reader.Name == "layer")
+										break;
+								
+								if (reader.NodeType == XmlNodeType.Element && reader.Name == "data")
+								{
+									int w = 0;
+									int h = 0;
+									
+									while (reader.Read())
+									{
+										if (reader.NodeType == XmlNodeType.EndElement)
+											if (reader.Name == "data")
+												break;
+										
+										if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
+										{
+											layer.gids[w, h] = uint.Parse(reader.GetAttribute("gid"));
+											++w;
+											if (w == layer_width)
+											{
+												w = 0;
+												++h;
+											}
+										}
+									}
+								}
+							}
+							
+							layers.Add(layer);
+																				
 							break;
 						default:
 							break;
 					}
-				}
-
-				if (reader.NodeType == XmlNodeType.EndElement)
-				{
-					// ...
 				}
 			}
 		}
@@ -85,6 +115,7 @@ namespace o2dtk
 			width = height = tile_width = tile_height = 0;
 
 			tileSets = new List<TileSet>();
+			layers = new List<TiledLayer>();
 		}
 	}
 }
