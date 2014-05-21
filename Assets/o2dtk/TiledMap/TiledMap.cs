@@ -136,8 +136,8 @@ namespace o2dtk
 				EditorUtility.DisplayProgressBar(progress_bar_title, "Rendering '" + layers[i].name + "'", (float)(i + 1) / layers.Count);
 				TileRenderLayer render = new TileRenderLayer();
 
-				render.BuildFromLayer(library, layers[i], layers.Count - i - 1);
-				render.ParentLayer(render_root);
+				render.BuildFromLayer(library, layers[i]);
+				render.ParentLayer(render_root, layers.Count - i - 1);
 			}
 
 			EditorUtility.ClearProgressBar();

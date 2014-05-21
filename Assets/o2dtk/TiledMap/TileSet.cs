@@ -111,6 +111,7 @@ namespace o2dtk
 					if (!File.Exists(tile_path))
 					{
 						// Copy over the pixel data
+						// Tiles are flipped vertically
 						for (int i = 0; i < tile_height; ++i)
 							System.Array.Copy(image_pixels, (image.height - (i + cur_y) - 1) * image.width + cur_x, pixels, (tile_height - i - 1) * tile_width, tile_width);
 
@@ -122,15 +123,6 @@ namespace o2dtk
 						BinaryWriter bw = new BinaryWriter(tile_fs);
 						bw.Write(bytes);
 						tile_fs.Close();
-
-						AssetDatabase.ImportAsset(tile_path);
-					
-						TextureImporter tile_imp = AssetImporter.GetAtPath(tile_path) as TextureImporter;
-
-						tile_imp.textureType = TextureImporterType.Advanced;
-						tile_imp.textureFormat = TextureImporterFormat.AutomaticTruecolor;
-						tile_imp.mipmapEnabled = false;
-						tile_imp.filterMode = FilterMode.Point;
 
 						AssetDatabase.ImportAsset(tile_path);
 					}

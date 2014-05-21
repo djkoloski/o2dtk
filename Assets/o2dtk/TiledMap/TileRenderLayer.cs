@@ -14,16 +14,16 @@ namespace o2dtk
 			go_transform = null;
 		}
 
-		public void ParentLayer(GameObject parent)
+		public void ParentLayer(GameObject parent, float z_depth)
 		{
 			if (!go_transform)
 				return;
 			
 			go_transform.parent = parent.GetComponent<Transform>();
-			go_transform.localPosition = Vector3.zero;
+			go_transform.localPosition = new Vector3(0.0f, 0.0f, z_depth);
 		}
 
-		public void BuildFromLayer(TileLibrary library, TiledLayer layer, float z_depth)
+		public void BuildFromLayer(TileLibrary library, TiledLayer layer)
 		{
 			Clear();
 
@@ -48,7 +48,7 @@ namespace o2dtk
 					mr.material = mat;
 					Transform quad_transform = quad.GetComponent<Transform>();
 					quad_transform.parent = go_transform;
-					quad_transform.localPosition = new Vector3(x + 0.5f, layer.height - y - 0.5f, z_depth);
+					quad_transform.localPosition = new Vector3(x + 0.5f, layer.height - y - 0.5f, 0.0f);
 				}
 			}
 		}
