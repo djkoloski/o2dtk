@@ -27,7 +27,9 @@ namespace o2dtk
 		// A list of the layers in the tiled map
 		public List<TiledLayer> layers = null;
 
-		public void LoadTiledMap()
+		// The 
+
+		public void LoadTiledMap(bool force_reload)
 		{
 			ClearTileMap();
 			
@@ -75,7 +77,7 @@ namespace o2dtk
 									image_path = Path.Combine(tiled_map_dir, reader.GetAttribute("source"));
 							}
 
-							tileset.MakeTilesFromImage(image_path);
+							tileset.MakeTilesFromImage(image_path, force_reload);
 
 							break;
 						case "layer":
@@ -122,7 +124,7 @@ namespace o2dtk
 
 		void BuildTiles()
 		{
-			// ...
+			
 		}
 
 		void ClearTiles()

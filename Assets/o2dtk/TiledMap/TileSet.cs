@@ -48,7 +48,17 @@ namespace o2dtk
 				return;
 			}
 
-			string image_tile_dir = Path.Combine(Path.GetDirectoryName(image_path), Path.GetFileNameWithoutExtension(image_path));
+			string image_name = Path.GetFileNameWithoutExtension(image_path);
+			string tileset_name = image_name + "_" + tile_width + "x" + tile_height + "_tiles";
+			string tiles_dir = Path.Combine(Path.GetDirectoryName(image_path), tileset_name);
+
+			string progress_bar_title = "Loading " + tileset_name + "";
+
+			// Make tiles folder
+			if (!System.IO.Directory.Exists(tiles_dir))
+				System.IO.Directory.CreateDirectory(tiles_dir);
+
+			EditorUtility.DisplayProgressBar(progress_bar_title, "Preparing tile atlas", 0.0f);
 
 			// Configure settings for importing sprite sheets
 			TextureImporter tex_imp = AssetImporter.GetAtPath(image_path) as TextureImporter;
@@ -63,17 +73,13 @@ namespace o2dtk
 			
 			Texture2D image = AssetDatabase.LoadAssetAtPath(image_path, typeof(Texture2D)) as Texture2D;
 
-			// Make tiles folder
-			string tiles_dir = image_tile_dir + "_tiles";
-			
-			if (!System.IO.Directory.Exists(tiles_dir))
-				System.IO.Directory.CreateDirectory(tiles_dir);
-
 			tiles = new List<Texture2D>();
 
 			Color32[] image_pixels = image.GetPixels32();
 			Texture2D cur_tile = new Texture2D(tile_width, tile_height);
 			Color32[] pixels = new Color32[tile_width * tile_height];
+
+			int total_tiles = (image.width / tile_width) * (image.height / tile_height);
 
 			int cur_x = 0;
 			int cur_y = 0;
@@ -83,17 +89,26 @@ namespace o2dtk
 			{
 				while (cur_x + tile_width <= image.width)
 				{
+					EditorUtility.DisplayProgressBar(progress_bar_title, "Loading tile " + tiles.Count + " of " + total_tiles, (float)tiles.Count / total_tiles);
+					
 					string tile_path = Path.Combine(tiles_dir, "tile_" + tiles.Count + ".png");
 
-					if (File.Exists(tile_path) && force)
-						File.Delete(tile_path);
+					if (File.Exists(tile_path))
+					{
+						if (force)
+							File.Delete(tile_path);
+						else
+						{
+							cur_x += tile_width;
+							continue;
+						}
+					}
 
 					if (!File.Exists(tile_path))
 					{
 						// Copy over the pixel data
-						for (int j = 0; j < tile_height; ++j)
-							for (int i = 0; i < tile_width; ++i)
-								pixels[j * tile_width + i] = image_pixels[(j + cur_y) * image.width + i + cur_x];
+						for (int i = 0; i < tile_height; ++i)
+							System.Array.Copy(image_pixels, (i + cur_y) * image.width + cur_x, pixels, i * tile_width, tile_width);
 
 						// Set the pixels then save the tile
 						cur_tile.SetPixels32(pixels);
@@ -124,7 +139,11 @@ namespace o2dtk
 				cur_y += tile_height;
 			}
 
+			EditorUtility.DisplayProgressBar(progress_bar_title, "Finalizing...", 1.0f);
+
 			Texture2D.DestroyImmediate(cur_tile);
+
+			EditorUtility.ClearProgressBar();
 		}
 	}
 }

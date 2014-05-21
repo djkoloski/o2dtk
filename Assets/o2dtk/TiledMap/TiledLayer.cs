@@ -22,5 +22,4 @@ public class TiledLayer
 		height = h;
 		gids = new uint[w,h];
 	}
-	
 }
