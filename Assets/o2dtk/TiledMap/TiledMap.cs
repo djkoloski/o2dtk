@@ -22,12 +22,15 @@ namespace o2dtk
 		public int tile_height;
 
 		// A list of the tile sets used by the tiled map
-		public List<TileSet> tileSets = null;
+		public TileLibrary library = null;
 
 		// A list of the layers in the tiled map
 		public List<TiledLayer> layers = null;
 
-		// The 
+		// The rendering layers in the tiled map
+		public List<TileRenderLayer> renderLayers = null;
+		// The GameObject the rendering layers are attached to
+		public GameObject render_root = null;
 
 		public void LoadTiledMap(bool force_reload)
 		{
@@ -62,7 +65,7 @@ namespace o2dtk
 							TileSet tileset = new TileSet();
 
 							tileset.name = reader.GetAttribute("name");
-							tileset.first_gid = int.Parse(reader.GetAttribute("firstgid"));
+							tileset.first_gid = uint.Parse(reader.GetAttribute("firstgid"));
 							tileset.tile_width = int.Parse(reader.GetAttribute("tilewidth"));
 							tileset.tile_height = int.Parse(reader.GetAttribute("tileheight"));
 
@@ -78,6 +81,8 @@ namespace o2dtk
 							}
 
 							tileset.MakeTilesFromImage(image_path, force_reload);
+
+							library.AddTileSet(tileset);
 
 							break;
 						case "layer":
@@ -124,12 +129,20 @@ namespace o2dtk
 
 		void BuildTiles()
 		{
-			
+			foreach (TiledLayer layer in layers)
+			{
+				TileRenderLayer render = new TileRenderLayer();
+
+				render.BuildFromLayer(library, layer);
+				render.ParentLayer(render_root);
+			}
 		}
 
 		void ClearTiles()
 		{
-			// ...
+			if (renderLayers != null)
+				foreach (TileRenderLayer renderLayer in renderLayers)
+					renderLayer.Clear();
 		}
 
 		void ClearTileMap()
@@ -138,8 +151,18 @@ namespace o2dtk
 
 			width = height = tile_width = tile_height = 0;
 
-			tileSets = new List<TileSet>();
+			library = new TileLibrary();
 			layers = new List<TiledLayer>();
+			renderLayers = new List<TileRenderLayer>();
+
+			if (render_root != null)
+				GameObject.DestroyImmediate(render_root);
+			
+			render_root = new GameObject("render_root");
+
+			Transform render_root_transform = render_root.GetComponent<Transform>();
+			render_root_transform.parent = GetComponent<Transform>();
+			render_root_transform.localPosition = Vector3.zero;
 		}
 	}
 }

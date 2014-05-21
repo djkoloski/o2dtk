@@ -8,11 +8,14 @@ namespace o2dtk
 {
 	public class TileSet
 	{
+		// The name of the base shader to make materials from
+		private static string base_material_name = "Transparent/Diffuse";
+	
 		// The name of the tile set
 		public string name;
 
 		// The first GID of the tile set
-		public int first_gid;
+		public uint first_gid;
 
 		// The width of each tile in the tile set
 		public int tile_width;
@@ -26,6 +29,8 @@ namespace o2dtk
 
 		// The tiles in the tile set
 		public List<Texture2D> tiles;
+		// The materials for the tiles in the set
+		public List<Material> materials;
 
 		public TileSet()
 		{
@@ -74,6 +79,7 @@ namespace o2dtk
 			Texture2D image = AssetDatabase.LoadAssetAtPath(image_path, typeof(Texture2D)) as Texture2D;
 
 			tiles = new List<Texture2D>();
+			materials = new List<Material>();
 
 			Color32[] image_pixels = image.GetPixels32();
 			Texture2D cur_tile = new Texture2D(tile_width, tile_height);
@@ -92,23 +98,21 @@ namespace o2dtk
 					EditorUtility.DisplayProgressBar(progress_bar_title, "Loading tile " + tiles.Count + " of " + total_tiles, (float)tiles.Count / total_tiles);
 					
 					string tile_path = Path.Combine(tiles_dir, "tile_" + tiles.Count + ".png");
+					string material_path = Path.Combine(tiles_dir, "tile_" + tiles.Count + ".mat");
 
-					if (File.Exists(tile_path))
+					if (force)
 					{
-						if (force)
+						if (File.Exists(tile_path))
 							File.Delete(tile_path);
-						else
-						{
-							cur_x += tile_width;
-							continue;
-						}
+						if (File.Exists(material_path))
+							File.Delete(material_path);
 					}
 
 					if (!File.Exists(tile_path))
 					{
 						// Copy over the pixel data
 						for (int i = 0; i < tile_height; ++i)
-							System.Array.Copy(image_pixels, (i + cur_y) * image.width + cur_x, pixels, i * tile_width, tile_width);
+							System.Array.Copy(image_pixels, (image.height - (i + cur_y) - 1) * image.width + cur_x, pixels, (tile_height - i - 1) * tile_width, tile_width);
 
 						// Set the pixels then save the tile
 						cur_tile.SetPixels32(pixels);
@@ -118,19 +122,31 @@ namespace o2dtk
 						BinaryWriter bw = new BinaryWriter(tile_fs);
 						bw.Write(bytes);
 						tile_fs.Close();
+
+						AssetDatabase.ImportAsset(tile_path);
+					
+						TextureImporter tile_imp = AssetImporter.GetAtPath(tile_path) as TextureImporter;
+
+						tile_imp.textureType = TextureImporterType.Advanced;
+						tile_imp.textureFormat = TextureImporterFormat.AutomaticTruecolor;
+						tile_imp.mipmapEnabled = false;
+						tile_imp.filterMode = FilterMode.Point;
+
+						AssetDatabase.ImportAsset(tile_path);
 					}
 
-					AssetDatabase.ImportAsset(tile_path);
-					
-					TextureImporter tile_imp = AssetImporter.GetAtPath(tile_path) as TextureImporter;
-
-					tile_imp.textureType = TextureImporterType.Advanced;
-					tile_imp.mipmapEnabled = false;
-					tile_imp.filterMode = FilterMode.Point;
-
-					AssetDatabase.ImportAsset(tile_path);
-
 					tiles.Add(AssetDatabase.LoadAssetAtPath(tile_path, typeof(Texture2D)) as Texture2D);
+
+					if (!File.Exists(material_path))
+					{
+						Material tex_mat = new Material(Shader.Find(base_material_name));
+						tex_mat.mainTexture = tiles[tiles.Count - 1];
+						AssetDatabase.CreateAsset(tex_mat, material_path);
+						AssetDatabase.SaveAssets();
+						materials.Add(tex_mat);
+					}
+					else
+						materials.Add(AssetDatabase.LoadAssetAtPath(material_path, typeof(Material)) as Material);
 
 					cur_x += tile_width;
 				}
