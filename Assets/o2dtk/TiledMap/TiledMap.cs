@@ -98,18 +98,30 @@ namespace o2dtk
 								
 								if (reader.NodeType == XmlNodeType.Element && reader.Name == "data")
 								{
-									uint index = 0;
-									
-									while (reader.Read())
+									if(reader.GetAttribute("encoding") == "base64")
 									{
-										if (reader.NodeType == XmlNodeType.EndElement)
-											if (reader.Name == "data")
-												break;
-										
-										if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
+										int length = layer_width*layer_height;
+										byte[] buffer = new byte[length*4];
+										reader.ReadElementContentAsBase64(buffer,0,length*4);
+										for(int i=0;i<length;++i)
 										{
-											layer.gids[index % layer_width, index / layer_width] = uint.Parse(reader.GetAttribute("gid"));
-											++index;
+											layer.gids[i % layer_width, i / layer_width] = (uint)buffer[i*4];
+										}
+									}
+									else
+									{
+										uint index = 0;									
+										while (reader.Read())
+										{
+											if (reader.NodeType == XmlNodeType.EndElement)
+												if (reader.Name == "data")
+													break;
+										
+											if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
+											{
+												layer.gids[index % layer_width, index / layer_width] = uint.Parse(reader.GetAttribute("gid"));
+												++index;
+											}
 										}
 									}
 								}
