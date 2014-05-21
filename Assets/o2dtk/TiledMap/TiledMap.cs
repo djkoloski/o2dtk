@@ -56,6 +56,28 @@ namespace o2dtk
 							tile_height = int.Parse(reader.GetAttribute("tileheight"));
 
 							break;
+						case "tileset":
+							TileSet tileset = new TileSet();
+
+							tileset.name = reader.GetAttribute("name");
+							tileset.first_gid = int.Parse(reader.GetAttribute("firstgid"));
+							tileset.tile_width = int.Parse(reader.GetAttribute("tilewidth"));
+							tileset.tile_height = int.Parse(reader.GetAttribute("tileheight"));
+
+							string image_path = "";
+
+							while (reader.Read())
+							{
+								if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "tileset")
+									break;
+
+								if (reader.NodeType == XmlNodeType.Element && reader.Name == "image")
+									image_path = Path.Combine(tiled_map_dir, reader.GetAttribute("source"));
+							}
+
+							tileset.MakeTilesFromImage(image_path);
+
+							break;
 						case "layer":
 							string layer_name = reader.GetAttribute("name");
 							int layer_width = int.Parse(reader.GetAttribute("width"));
@@ -64,14 +86,12 @@ namespace o2dtk
 
 							while (reader.Read())
 							{
-								if (reader.NodeType == XmlNodeType.EndElement)
-									if (reader.Name == "layer")
-										break;
+								if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "layer")
+									break;
 								
 								if (reader.NodeType == XmlNodeType.Element && reader.Name == "data")
 								{
-									int w = 0;
-									int h = 0;
+									uint index = 0;
 									
 									while (reader.Read())
 									{
@@ -81,13 +101,8 @@ namespace o2dtk
 										
 										if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
 										{
-											layer.gids[w, h] = uint.Parse(reader.GetAttribute("gid"));
-											++w;
-											if (w == layer_width)
-											{
-												w = 0;
-												++h;
-											}
+											layer.gids[index % layer_width, index / layer_width] = uint.Parse(reader.GetAttribute("gid"));
+											++index;
 										}
 									}
 								}
@@ -101,6 +116,13 @@ namespace o2dtk
 					}
 				}
 			}
+
+			BuildTiles();
+		}
+
+		void BuildTiles()
+		{
+			// ...
 		}
 
 		void ClearTiles()

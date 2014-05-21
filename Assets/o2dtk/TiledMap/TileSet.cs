@@ -1,6 +1,8 @@
 using UnityEngine;
+using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 
 namespace o2dtk
 {
@@ -22,9 +24,6 @@ namespace o2dtk
 		// The Y offste of each tile in the tile set
 		public int tile_offset_y;
 
-		// The image for the tile set (either a file or loaded on the fly)
-		public Texture2D image;
-
 		// The tiles in the tile set
 		public List<Texture2D> tiles;
 
@@ -38,19 +37,10 @@ namespace o2dtk
 
 			tile_offset_x = tile_offset_y = 0;
 
-			image = null;
-
 			tiles = null;
 		}
 
-		~TileSet()
-		{
-			foreach (Texture2D tile in tiles)
-				Texture2D.Destroy(tile);
-			tiles.Clear();
-		}
-
-		public void MakeTilesFromImage()
+		public void MakeTilesFromImage(string image_path, bool force = false)
 		{
 			if (tile_width < 1 || tile_height < 1)
 			{
@@ -58,10 +48,31 @@ namespace o2dtk
 				return;
 			}
 
+			string image_tile_dir = Path.Combine(Path.GetDirectoryName(image_path), Path.GetFileNameWithoutExtension(image_path));
+
+			// Configure settings for importing sprite sheets
+			TextureImporter tex_imp = AssetImporter.GetAtPath(image_path) as TextureImporter;
+			
+			tex_imp.textureType = TextureImporterType.Advanced;
+			tex_imp.isReadable = true;
+			tex_imp.npotScale = TextureImporterNPOTScale.None;
+			tex_imp.mipmapEnabled = false;
+			tex_imp.filterMode = FilterMode.Point;
+			
+			AssetDatabase.ImportAsset(image_path);
+			
+			Texture2D image = AssetDatabase.LoadAssetAtPath(image_path, typeof(Texture2D)) as Texture2D;
+
+			// Make tiles folder
+			string tiles_dir = image_tile_dir + "_tiles";
+			
+			if (!System.IO.Directory.Exists(tiles_dir))
+				System.IO.Directory.CreateDirectory(tiles_dir);
+
 			tiles = new List<Texture2D>();
 
 			Color32[] image_pixels = image.GetPixels32();
-			Texture2D cur_tile;
+			Texture2D cur_tile = new Texture2D(tile_width, tile_height);
 			Color32[] pixels = new Color32[tile_width * tile_height];
 
 			int cur_x = 0;
@@ -72,23 +83,39 @@ namespace o2dtk
 			{
 				while (cur_x + tile_width <= image.width)
 				{
-					cur_tile = new Texture2D(tile_width, tile_height);
+					string tile_path = Path.Combine(tiles_dir, "tile_" + tiles.Count + ".png");
 
-					// Copy over the pixel data
-					for (int j = 0; j < tile_height; ++j)
+					if (File.Exists(tile_path) && force)
+						File.Delete(tile_path);
+
+					if (!File.Exists(tile_path))
 					{
-						for (int i = 0; i < tile_width; ++i)
-						{
-							pixels[j * tile_width + i] = image_pixels[(j + cur_y) * tile_width + i + cur_x];
-						}
+						// Copy over the pixel data
+						for (int j = 0; j < tile_height; ++j)
+							for (int i = 0; i < tile_width; ++i)
+								pixels[j * tile_width + i] = image_pixels[(j + cur_y) * image.width + i + cur_x];
+
+						// Set the pixels then save the tile
+						cur_tile.SetPixels32(pixels);
+
+						byte[] bytes = cur_tile.EncodeToPNG();
+						FileStream tile_fs = File.OpenWrite(tile_path);
+						BinaryWriter bw = new BinaryWriter(tile_fs);
+						bw.Write(bytes);
+						tile_fs.Close();
 					}
 
-					// Set the pixels then save the tile
-					cur_tile.SetPixels32(pixels);
-					cur_tile.name = name + "_tile_" + tiles.Count;
-					cur_tile.filterMode = FilterMode.Point;
-					cur_tile.wrapMode = TextureWrapMode.Repeat;
-					tiles.Add(cur_tile);
+					AssetDatabase.ImportAsset(tile_path);
+					
+					TextureImporter tile_imp = AssetImporter.GetAtPath(tile_path) as TextureImporter;
+
+					tile_imp.textureType = TextureImporterType.Advanced;
+					tile_imp.mipmapEnabled = false;
+					tile_imp.filterMode = FilterMode.Point;
+
+					AssetDatabase.ImportAsset(tile_path);
+
+					tiles.Add(AssetDatabase.LoadAssetAtPath(tile_path, typeof(Texture2D)) as Texture2D);
 
 					cur_x += tile_width;
 				}
@@ -96,6 +123,8 @@ namespace o2dtk
 				cur_x = 0;
 				cur_y += tile_height;
 			}
+
+			Texture2D.DestroyImmediate(cur_tile);
 		}
 	}
 }
