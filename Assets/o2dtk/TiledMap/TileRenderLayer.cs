@@ -6,24 +6,29 @@ namespace o2dtk
 	public class TileRenderLayer
 	{
 		public GameObject go_layer;
+		public Transform go_transform;
 		
 		public TileRenderLayer()
 		{
 			go_layer = null;
+			go_transform = null;
 		}
 
 		public void ParentLayer(GameObject parent)
 		{
-			Transform go_transform = go_layer.GetComponent<Transform>();
+			if (!go_transform)
+				return;
+			
 			go_transform.parent = parent.GetComponent<Transform>();
 			go_transform.localPosition = Vector3.zero;
 		}
 
-		public void BuildFromLayer(TileLibrary library, TiledLayer layer)
+		public void BuildFromLayer(TileLibrary library, TiledLayer layer, float z_depth)
 		{
 			Clear();
 
 			go_layer = new GameObject(layer.name);
+			go_transform = go_layer.GetComponent<Transform>();
 
 			// TODO optimize building quads
 
@@ -42,8 +47,8 @@ namespace o2dtk
 					MeshRenderer mr = quad.GetComponent<MeshRenderer>();
 					mr.material = mat;
 					Transform quad_transform = quad.GetComponent<Transform>();
-					quad_transform.parent = go_layer.GetComponent<Transform>();
-					quad_transform.localPosition = new Vector3(x + 0.5f, layer.height - y - 0.5f, 0);
+					quad_transform.parent = go_transform;
+					quad_transform.localPosition = new Vector3(x + 0.5f, layer.height - y - 0.5f, z_depth);
 				}
 			}
 		}

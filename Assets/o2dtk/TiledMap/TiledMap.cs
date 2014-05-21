@@ -129,13 +129,18 @@ namespace o2dtk
 
 		void BuildTiles()
 		{
-			foreach (TiledLayer layer in layers)
+			string progress_bar_title = "Rendering tile map";
+			
+			for (int i = 0; i < layers.Count; ++i)
 			{
+				EditorUtility.DisplayProgressBar(progress_bar_title, "Rendering '" + layers[i].name + "'", (float)(i + 1) / layers.Count);
 				TileRenderLayer render = new TileRenderLayer();
 
-				render.BuildFromLayer(library, layer);
+				render.BuildFromLayer(library, layers[i], layers.Count - i - 1);
 				render.ParentLayer(render_root);
 			}
+
+			EditorUtility.ClearProgressBar();
 		}
 
 		void ClearTiles()
