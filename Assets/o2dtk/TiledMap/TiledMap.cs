@@ -20,21 +20,56 @@ namespace o2dtk
 		public int tile_width;
 		// The height of each tile in pixels
 		public int tile_height;
+		// The chunk width (or 0 to indicate no chunking)
+		public int chunk_width;
+		// The chunk height (or 0 to indicate no chunking)
+		public int chunk_height;
+		// Returns whether or not the map is broken into chunks
+		public bool chunked
+		{
+			get
+			{
+				return chunk_width > 0 && chunk_height > 0;
+			}
+		}
 
 		// A list of the tile sets used by the tiled map
 		public TileLibrary library = null;
 
+		public bool tilesets_loaded
+		{
+			get
+			{
+				return library != null;
+			}
+		}
+
 		// A list of the layers in the tiled map
 		public List<TiledLayer> layers = null;
+
+		// Returns whether or not the tiles are loaded
+		public bool tiles_loaded
+		{
+			get
+			{
+				return layers != null;
+			}
+		}
 
 		// The rendering layers in the tiled map
 		public List<TileRenderLayer> renderLayers = null;
 		// The GameObject the rendering layers are attached to
 		public GameObject render_root = null;
 
-		public void LoadTiledMap(bool force_reload)
+		public void LoadTiledMap(TiledMapImportSettings settings)
 		{
-			ClearTileMap();
+			ClearTileMap(settings);
+
+			if (settings.chunk_map)
+			{
+				chunk_width = settings.chunk_width;
+				chunk_height = settings.chunk_height;
+			}
 			
 			string tiled_map_path = AssetDatabase.GetAssetPath(tiledMapFile);
 			string tiled_map_dir = Path.GetDirectoryName(tiled_map_path);
@@ -62,6 +97,9 @@ namespace o2dtk
 
 							break;
 						case "tileset":
+							if (!settings.slice_tilesets)
+								break;
+							
 							TileSet tileset = new TileSet();
 
 							tileset.name = reader.GetAttribute("name");
@@ -80,12 +118,15 @@ namespace o2dtk
 									image_path = Path.Combine(tiled_map_dir, reader.GetAttribute("source"));
 							}
 
-							tileset.MakeTilesFromImage(image_path, force_reload);
+							tileset.MakeTilesFromImage(image_path, settings.rebuild_tilesets);
 
 							library.AddTileSet(tileset);
 
 							break;
 						case "layer":
+							if (!settings.load_map)
+								break;
+							
 							string layer_name = reader.GetAttribute("name");
 							int layer_width = int.Parse(reader.GetAttribute("width"));
 							int layer_height = int.Parse(reader.GetAttribute("height"));
@@ -136,7 +177,8 @@ namespace o2dtk
 				}
 			}
 
-			BuildTiles();
+			if (settings.load_map)
+				BuildTiles();
 		}
 
 		void BuildTiles()
@@ -148,7 +190,11 @@ namespace o2dtk
 				EditorUtility.DisplayProgressBar(progress_bar_title, "Rendering '" + layers[i].name + "'", (float)(i + 1) / layers.Count);
 				TileRenderLayer render = new TileRenderLayer();
 
-				render.BuildFromLayer(library, layers[i]);
+				if (chunk_width > 0 && chunk_height > 0)
+					render.BuildFromLayer(library, layers[i], chunk_width, chunk_height);
+				else
+					render.BuildFromLayer(library, layers[i], layers[i].width, layers[i].height);
+				
 				render.ParentLayer(render_root, layers.Count - i - 1);
 			}
 
@@ -162,24 +208,29 @@ namespace o2dtk
 					renderLayer.Clear();
 		}
 
-		void ClearTileMap()
+		void ClearTileMap(TiledMapImportSettings settings)
 		{
-			ClearTiles();
+			if (settings.slice_tilesets)
+				library = new TileLibrary();
 
-			width = height = tile_width = tile_height = 0;
+			if (settings.load_map)
+			{
+				ClearTiles();
 
-			library = new TileLibrary();
-			layers = new List<TiledLayer>();
-			renderLayers = new List<TileRenderLayer>();
+				chunk_width = chunk_height = width = height = tile_width = tile_height = 0;
 
-			if (render_root != null)
-				GameObject.DestroyImmediate(render_root);
+				layers = new List<TiledLayer>();
+				renderLayers = new List<TileRenderLayer>();
+
+				if (render_root != null)
+					GameObject.DestroyImmediate(render_root);
 			
-			render_root = new GameObject("render_root");
+				render_root = new GameObject("render_root");
 
-			Transform render_root_transform = render_root.GetComponent<Transform>();
-			render_root_transform.parent = GetComponent<Transform>();
-			render_root_transform.localPosition = Vector3.zero;
+				Transform render_root_transform = render_root.GetComponent<Transform>();
+				render_root_transform.parent = GetComponent<Transform>();
+				render_root_transform.localPosition = Vector3.zero;
+			}
 		}
 	}
 }
