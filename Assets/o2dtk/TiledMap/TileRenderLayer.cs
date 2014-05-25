@@ -23,12 +23,36 @@ namespace o2dtk
 			go_transform.localPosition = new Vector3(0.0f, 0.0f, z_depth);
 		}
 
-		public void BuildFromLayer(TileLibrary library, TiledLayer layer)
+		public void BuildFromLayer(TileLibrary library, TiledLayer layer, int chunk_width, int chunk_height)
 		{
 			Clear();
 
+			if(chunk_width == 0 || chunk_height == 0)
+			{
+				chunk_width = layer.width;
+				chunk_height = layer.height;
+			}
+
 			go_layer = new GameObject(layer.name);
 			go_transform = go_layer.GetComponent<Transform>();
+
+			//Create all of our chunks
+			int chunk_x = layer.width / chunk_width; 
+			int chunk_y = layer.height / chunk_height;
+			if(layer.width % chunk_width != 0)
+				++chunk_x;
+			if(layer.height % chunk_height != 0)
+				++chunk_y;
+				
+			GameObject[,] chunks = new GameObject[chunk_x, chunk_y];
+			for(int y = chunk_y; y > -1; --y)
+			{
+				for(int x = 0; x < chunk_y; ++x)
+				{
+					chunks[x,y] = new GameObject("Chunk_" + x + '_' + y);
+					chunks[x,y].GetComponent<Transform>().parent = go_transform;
+				}
+			}
 
 			// TODO optimize building quads
 
@@ -47,7 +71,7 @@ namespace o2dtk
 					MeshRenderer mr = quad.GetComponent<MeshRenderer>();
 					mr.material = mat;
 					Transform quad_transform = quad.GetComponent<Transform>();
-					quad_transform.parent = go_transform;
+					quad_transform.parent = chunks[(x/chunk_x),(y/chunk_y)].GetComponent<Transform>();
 					quad_transform.localPosition = new Vector3(x + 0.5f, y + 0.5f, 0.0f);
 				}
 			}
