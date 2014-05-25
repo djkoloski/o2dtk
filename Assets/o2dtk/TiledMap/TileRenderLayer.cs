@@ -48,7 +48,7 @@ namespace o2dtk
 					mr.material = mat;
 					Transform quad_transform = quad.GetComponent<Transform>();
 					quad_transform.parent = go_transform;
-					quad_transform.localPosition = new Vector3(x + 0.5f, layer.height - y - 0.5f, 0.0f);
+					quad_transform.localPosition = new Vector3(x + 0.5f, y + 0.5f, 0.0f);
 				}
 			}
 		}
