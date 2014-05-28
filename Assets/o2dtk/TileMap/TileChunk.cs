@@ -67,54 +67,7 @@ namespace o2dtk
 			GameObject.DestroyImmediate(chunk_root);
 		}
 
-		// Chooses an indexing type based on the width and height of a chunk
-		public static uint GetIndexType(uint chunk_width, uint chunk_height)
-		{
-			uint tiles = chunk_width * chunk_height;
-
-			if (tiles <= 0xFF)
-				return 1;
-			if (tiles <= 0xFFFF)
-				return 2;
-			return 4;
-		}
-
-		// Reads a 32-, 16-, or 8-bit unsigned integer from the binary reader depending on the index type
-		public static uint ReadSizedUInt(BinaryReader input, uint index_type)
-		{
-			switch (index_type)
-			{
-				case 1:
-					return input.ReadByte();
-				case 2:
-					return input.ReadUInt16();
-				case 4:
-					return input.ReadUInt32();
-				default:
-					return input.ReadUInt32();
-			}
-		}
-
-		// Writes a 32-, 16-, or 8-bit unsigned integer to the binary writer depending on the index type
-		public static void WriteSizedUInt(uint value, BinaryWriter output, uint index_type)
-		{
-			switch (index_type)
-			{
-				case 1:
-					output.Write((byte)value);
-					break;
-				case 2:
-					output.Write((byte)(value & 0xFF));
-					output.Write((byte)(value >> 8));
-					break;
-				case 4:
-					output.Write((uint)value);
-					break;
-				default:
-					output.Write((uint)value);
-					break;
-			}
-		}
+		// TODO change files to use the sized uints utility
 		
 		public static TileChunk Load(string path, LoadMode mode, TileMap map, TileChunk chunk = null)
 		{
@@ -148,7 +101,7 @@ namespace o2dtk
 			chunk.width = input.ReadUInt32();
 			chunk.height = input.ReadUInt32();
 
-			uint index_type = GetIndexType(chunk.width, chunk.height);
+			uint index_size = Utility.SizedUInt.GetIndexSize(chunk.width * chunk.height);
 			
 			uint num_tile_layers = input.ReadUInt32();
 			uint num_object_layers = input.ReadUInt32();
@@ -196,7 +149,7 @@ namespace o2dtk
 
 					// Read in and build the optimized quads
 					for (uint q = 0; q < quad_count * 2; ++q)
-						quads[q] = ReadSizedUInt(input, index_type);
+						quads[q] = Utility.SizedUInt.ReadSizedUInt(input, index_size);
 
 					for (uint q = 0; q < quad_count * 2;)
 					{

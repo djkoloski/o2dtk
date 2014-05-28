@@ -220,7 +220,7 @@ namespace o2dtk
 							for (uint x = 0; x < data_width; ++x)
 								output.Write(layers[i].gids[cur_x + x, cur_y + y]);
 
-					// TODO use index_type for the quad sizing
+					// TODO use index_size for the quad sizing
 					for (uint i = 0; i < layers.Count; ++i)
 						output.Write(0);
 
