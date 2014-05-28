@@ -8,7 +8,7 @@ namespace o2dtk
 	{
 		void OnPreprocessTexture()
 		{
-			if (assetPath.ToLower().IndexOf("_tiles/") != -1)
+			if (assetPath.ToLower().IndexOf("/tile_") != -1)
 			{
 				TextureImporter tile_imp = assetImporter as TextureImporter;
 
