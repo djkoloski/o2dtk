@@ -84,9 +84,15 @@ namespace o2dtk
 
 	public class TMXConverter
 	{
-		// Takes an image at a path and slices it into a set of
-		//   tiles, returning the number of tiles it sliced it into
-		public static uint SliceTileSet(string image_path, uint slice_width, uint slice_height, string tileset_dir, bool force)
+		// Takes an image at a path and determines how many tiles of a given size are in it
+		public static uint CountTilesInImage(string image_path, uint slice_width, uint slice_height)
+		{
+			Texture2D image = AssetDatabase.LoadAssetAtPath(image_path, typeof(Texture2D)) as Texture2D;
+			return (uint)((image.width / slice_width) * (image.height / slice_height));
+		}
+		
+		// Takes an image at a path and slices it into a set of tiles
+		public static void SliceTileSet(string image_path, uint slice_width, uint slice_height, string tileset_dir, bool force)
 		{
 			string progress_bar_title = "Loading '" + Path.GetFileName(image_path) + "'";
 			EditorUtility.DisplayProgressBar(progress_bar_title, "Preparing tile atlas", 0.0f);
@@ -163,8 +169,6 @@ namespace o2dtk
 			AssetDatabase.SaveAssets();
 
 			EditorUtility.ClearProgressBar();
-
-			return total_tiles;
 		}
 
 		// Takes a list of layers and builds the chunks out of them
@@ -193,11 +197,14 @@ namespace o2dtk
 					FileStream chunk_stream = File.OpenWrite(chunk_path);
 					BinaryWriter output = new BinaryWriter(chunk_stream);
 
+					uint data_width = (width < map_width - cur_x ? width : map_width - cur_x);
+					uint data_height = (height < map_height - cur_y ? height : map_height - cur_y);
+
 					output.Write(TileChunk.magic_number);
 					output.Write(cur_x);
 					output.Write(cur_y);
-					output.Write(width);
-					output.Write(height);
+					output.Write(data_width);
+					output.Write(data_height);
 					output.Write((uint)layers.Count);
 					// TODO replace with number of object layers
 					output.Write(0);
@@ -205,25 +212,13 @@ namespace o2dtk
 					// TODO optimize chunk rendering
 
 					output.Write(TileChunk.header_size);
-					output.Write((uint)(TileChunk.header_size + layers.Count * width * height * 4));
-					output.Write((uint)(TileChunk.header_size + layers.Count * width * height * 4 + layers.Count * 4));
+					output.Write((uint)(TileChunk.header_size + layers.Count * data_width * data_height * 4));
+					output.Write((uint)(TileChunk.header_size + layers.Count * data_width * data_height * 4 + layers.Count * 4));
 
 					for (int i = 0; i < layers.Count; ++i)
-					{
-						uint data_width = (width < map_width - cur_x ? width : map_width - cur_x);
-						uint data_height = (height < map_height - cur_y ? height : map_height - cur_y);
-
 						for (uint y = 0; y < data_height; ++y)
-						{
 							for (uint x = 0; x < data_width; ++x)
 								output.Write(layers[i].gids[cur_x + x, cur_y + y]);
-							for (uint x = data_width; x < width; ++x)
-								output.Write((uint)0);
-						}
-						for (uint y = data_height; y < height; ++y)
-							for (uint x = 0; x < width; ++x)
-								output.Write((uint)0);
-					}
 
 					// TODO use index_type for the quad sizing
 					for (uint i = 0; i < layers.Count; ++i)
@@ -289,9 +284,6 @@ namespace o2dtk
 
 							break;
 						case "tileset":
-							if (!settings.rebuild_tilesets)
-								break;
-
 							TMXTileSetInfo tsi = new TMXTileSetInfo();
 
 							tsi.slice_width = uint.Parse(reader.GetAttribute("tilewidth"));
@@ -310,15 +302,17 @@ namespace o2dtk
 									image_path = reader.GetAttribute("source");
 							}
 
-							tsi.num_tiles = SliceTileSet(Path.Combine(tmx_dir, image_path), tsi.slice_width, tsi.slice_height, Path.Combine(tilesets_dir, tsi.name), settings.force_rebuild_tilesets);
+							image_path = Path.Combine(tmx_dir, image_path);
+
+							tsi.num_tiles = CountTilesInImage(image_path, tsi.slice_width, tsi.slice_height);
+
+							if (settings.rebuild_tilesets)
+								SliceTileSet(image_path, tsi.slice_width, tsi.slice_height, Path.Combine(tilesets_dir, tsi.name), settings.force_rebuild_tilesets);
 
 							tilesets.Add(tsi);
 
 							break;
 						case "layer":
-							if (!settings.rebuild_chunks)
-								break;
-
 							TMXLayerInfo tli = new TMXLayerInfo();
 
 							tli.name = reader.GetAttribute("name");
@@ -326,6 +320,13 @@ namespace o2dtk
 							uint height = uint.Parse(reader.GetAttribute("height"));
 							tli.layer_width = width;
 							tli.layer_height = height;
+
+							if (!settings.rebuild_chunks)
+							{
+								layers.Add(tli);
+								break;
+							}
+
 							tli.gids = new uint[width, height];
 
 							if (map_width == 0)
@@ -388,7 +389,8 @@ namespace o2dtk
 			if (map_chunk_height == 0)
 				map_chunk_height = map_height;
 
-			WriteChunks(layers, map_width, map_height, map_chunk_width, map_chunk_height, chunks_dir);
+			if (settings.rebuild_chunks)
+				WriteChunks(layers, map_width, map_height, map_chunk_width, map_chunk_height, chunks_dir);
 
 			// Write the data to the tilemap file
 			FileStream out_stream = File.OpenWrite(tilemap_path);

@@ -8,18 +8,14 @@ namespace o2dtk
 	public class TileMapEditor : Editor
 	{
 		// The GUIs that can be active
-		private static string[] gui_names = new string[] { "Info", "Load", "Convert" };
+		private static string[] gui_names = new string[] { "Info", "Load" };
 
 		// The tile map that is currently being edited
 		private TileMap tileMap;
 		// The current GUI
 		private int current_gui;
-		// The import settings to be used while loading TMX files
-		private TMXImportSettings settings;
 		// The tile map file to load from
 		private Object tilemap_file;
-		// The TMX file to convert from
-		private Object tmx_file;
 
 		// The leftmost chunk to load
 		private int chunk_left;
@@ -35,9 +31,15 @@ namespace o2dtk
 		{
 			tileMap = (TileMap)target;
 			current_gui = 0;
-			settings = new TMXImportSettings();
-			tilemap_file = null;
-			tmx_file = null;
+
+			if (tileMap.tilemap_file)
+			{
+				if (!tileMap.loaded)
+					tileMap.LoadFromFile(tileMap.tilemap_file);
+				tilemap_file = tileMap.tilemap_file;
+			}
+			else
+				tilemap_file = null;
 		}
 
 		// Makes a spaced label in the inspector
@@ -75,6 +77,11 @@ namespace o2dtk
 		// Draws the tile map loading GUI
 		void LoadGUI()
 		{
+			GUILayout.BeginHorizontal();
+			if (GUILayout.Button("Unload tile map"))
+				tileMap.Clear();
+			GUILayout.EndHorizontal();
+
 			GUILayout.BeginHorizontal();
 			GUILayout.Label("Tile map file:");
 			GUILayout.FlexibleSpace();
@@ -120,64 +127,6 @@ namespace o2dtk
 			GUILayout.EndHorizontal();
 		}
 
-		void ConvertGUI()
-		{
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("TMX file:");
-			GUILayout.FlexibleSpace();
-			tmx_file = EditorGUILayout.ObjectField(tmx_file, typeof(Object), true);
-			GUILayout.EndHorizontal();
-
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Conversion settings:");
-			GUILayout.EndHorizontal();
-
-			GUILayout.BeginHorizontal();
-			settings.rebuild_tilesets = GUILayout.Toggle(settings.rebuild_tilesets, "Rebuild tilesets");
-			GUILayout.EndHorizontal();
-
-			GUI.enabled = settings.rebuild_tilesets;
-			GUILayout.BeginHorizontal();
-			settings.force_rebuild_tilesets = GUILayout.Toggle(settings.force_rebuild_tilesets && GUI.enabled, "Force");
-			GUILayout.EndHorizontal();
-			GUI.enabled = true;
-
-			GUILayout.BeginHorizontal();
-			settings.rebuild_chunks = GUILayout.Toggle(settings.rebuild_chunks, "Rebuild chunks");
-			GUILayout.EndHorizontal();
-
-			GUI.enabled = settings.rebuild_chunks;
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunk width:");
-			settings.chunk_width = (uint)EditorGUILayout.IntField((int)settings.chunk_width);
-			GUILayout.EndHorizontal();
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunk height:");
-			settings.chunk_height = (uint)EditorGUILayout.IntField((int)settings.chunk_height);
-			GUILayout.EndHorizontal();
-			GUI.enabled = true;
-
-			GUILayout.BeginHorizontal();
-			if (GUILayout.Button("Convert TMX"))
-			{
-				bool load = true;
-
-				if (settings.force_rebuild_tilesets)
-					if (!EditorUtility.DisplayDialog("Rebuild all tilesets?", "This may take a while. Tilesets will be rebuilt regardless of whether or not they are already sliced. Rebuild all tilesets?", "Rebuild", "Cancel"))
-						load = false;
-
-				if (settings.rebuild_chunks && (settings.chunk_width < 0 || settings.chunk_height < 0))
-				{
-					EditorUtility.DisplayDialog("Invalid chunk size", "The chunk width and height must be greater than 0 or 0 to use the map width and height.", "OK");
-					load = false;
-				}
-
-				if (load)
-					TMXConverter.LoadTMX(AssetDatabase.GetAssetPath(tmx_file), settings);
-			}
-			GUILayout.EndHorizontal();
-		}
-
 		public override void OnInspectorGUI()
 		{
 			current_gui = GUILayout.SelectionGrid(current_gui, gui_names, gui_names.Length);
@@ -189,9 +138,6 @@ namespace o2dtk
 					break;
 				case 1:
 					LoadGUI();
-					break;
-				case 2:
-					ConvertGUI();
 					break;
 				default:
 					break;

@@ -8,7 +8,7 @@ namespace o2dtk
 	public class TileChunk
 	{
 		// The magic number for chunks
-		public static uint magic_number = 0x5A414348;
+		public static uint magic_number = 0x4843415A;
 
 		// The size, in bytes, of a .chunk file header
 		public static uint header_size = 40;
@@ -157,15 +157,18 @@ namespace o2dtk
 			uint render_offset = input.ReadUInt32();
 			uint object_offset = input.ReadUInt32();
 
-			if ((mode & LoadMode.Data) != 0)
+			List<TileDataLayer> chunk_data = new List<TileDataLayer>();
+
+			if ((mode & LoadMode.Data) != 0 || (mode & LoadMode.Render) != 0)
 			{
-				chunk.data_layers.Clear();
-				
 				chunk_file.Seek(data_offset, SeekOrigin.Begin);
 
 				for (uint i = 0; i < num_tile_layers; ++i)
-					chunk.data_layers.Add(new TileDataLayer(chunk.width, chunk.height, input.ReadBytes((int)(chunk.width * chunk.height * 4))));
+					chunk_data.Add(new TileDataLayer(chunk.width, chunk.height, input.ReadBytes((int)(chunk.width * chunk.height * 4))));
 			}
+
+			if ((mode & LoadMode.Data) != 0)
+				chunk.data_layers = chunk_data;
 
 			if ((mode & LoadMode.Render) != 0)
 			{
@@ -205,9 +208,7 @@ namespace o2dtk
 						uint quad_ux = quad_ur % chunk.width;
 						uint quad_uy = quad_ur / chunk.width;
 
-						long offset = data_offset + ((i * chunk.height + quad_y) * chunk.width + quad_x) * index_type;
-						chunk_file.Seek(offset, SeekOrigin.Begin);
-						uint gid = input.ReadUInt32();
+						uint gid = chunk_data[i].gids[quad_x, quad_y];
 
 						if (gid == 0)
 							continue;
@@ -226,13 +227,11 @@ namespace o2dtk
 						{
 							if (!mask.Get((int)(y * chunk.width + x)))
 							{
-								long offset = data_offset + ((i * chunk.height + y) * chunk.width + x) * 4;
-								chunk_file.Seek(offset, SeekOrigin.Begin);
-								uint gid = input.ReadUInt32();
+								uint gid = chunk_data[i].gids[x, y];
 
 								if (gid == 0)
 									continue;
-								
+
 								layer.AddQuad(x, y, x, y, num_tile_layers - i - 1, map.library.GetMaterialByGID(gid));
 							}
 						}

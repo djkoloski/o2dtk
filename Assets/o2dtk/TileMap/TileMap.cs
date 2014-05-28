@@ -9,7 +9,7 @@ namespace o2dtk
 	public class TileMap : MonoBehaviour
 	{
 		// The magic number for tile maps
-		public static uint magic_number = 0x4F324454;
+		public static uint magic_number = 0x5444324F;
 		
 		// The tile map file containing the tile map data
 		public Object tilemap_file;
@@ -50,15 +50,6 @@ namespace o2dtk
 				return chunks_x * chunks_y;
 			}
 		}
-
-		// Determines whether the tile map is loaded or not
-		public bool loaded
-		{
-			get
-			{
-				return (width > 0 && height > 0);
-			}
-		}
 		
 		// The tile map library
 		public TileLibrary library;
@@ -69,33 +60,42 @@ namespace o2dtk
 		// The object layers in the tile map
 		public List<TileLayerInfo> object_layers;
 
+		// Determines whether the tile map is loaded yet
+		public bool loaded
+		{
+			get
+			{
+				return (library != null);
+			}
+		}
+
 		// The game object chunks attach themselves to
 		public GameObject chunks_root;
 
 		void Awake()
 		{
 			Clear();
-			
+
 			LoadFromFile(tilemap_file);
 		}
 
-		void Clear()
+		public void Clear()
 		{
+			tilemap_file = null;
+
 			width = 0;
 			height = 0;
 			tile_width = 0;
 			tile_height = 0;
 			chunk_width = 0;
 			chunk_height = 0;
-			
-			library = new TileLibrary();
-			chunks = new Dictionary<uint, TileChunk>();
-			tile_layers = new List<TileLayerInfo>();
-			object_layers = new List<TileLayerInfo>();
+
+			library = null;
+			chunks = null;
+			tile_layers = null;
+			object_layers = null;
 
 			GameObject.DestroyImmediate(chunks_root);
-			chunks_root = new GameObject("chunks");
-			chunks_root.GetComponent<Transform>().parent = GetComponent<Transform>();
 		}
 
 		public void LoadChunk(uint chunk_x, uint chunk_y)
@@ -134,10 +134,8 @@ namespace o2dtk
 		public void LoadFromFile(Object map_file_obj)
 		{
 			Clear();
-			
-			tilemap_file = map_file_obj;
 
-			string file_path = AssetDatabase.GetAssetPath(tilemap_file);
+			string file_path = AssetDatabase.GetAssetPath(map_file_obj);
 			string file_dir = Path.GetDirectoryName(file_path);
 
 			FileStream map_file = File.OpenRead(file_path);
@@ -151,6 +149,16 @@ namespace o2dtk
 				Debug.LogError("Magic number of tile map '" + file_path + "' (0x" + magic_check.ToString("X") + ") does not match correct magic number (0x" + magic_number.ToString("X") + ")");
 				return;
 			}
+
+			library = new TileLibrary();
+			chunks = new Dictionary<uint, TileChunk>();
+			tile_layers = new List<TileLayerInfo>();
+			object_layers = new List<TileLayerInfo>();
+
+			chunks_root = new GameObject("chunks");
+			chunks_root.GetComponent<Transform>().parent = GetComponent<Transform>();
+
+			tilemap_file = map_file_obj;
 
 			width = input.ReadUInt32();
 			height = input.ReadUInt32();
