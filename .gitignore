@@ -1,0 +1,7 @@
+/Library
+/ProjectSettings
+/Temp
+/Assets/*
+!/Assets/Editor
+!/Assets/Examples
+!/Assets/o2dtk
