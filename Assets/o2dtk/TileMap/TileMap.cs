@@ -169,7 +169,7 @@ namespace o2dtk
 
 			uint num_tilesets = input.ReadUInt32();
 
-			string tilesets_dir = Path.Combine(file_dir, "tilesets");
+			string tilesets_dir = Open2D.settings.tilesets_root;
 
 			for (uint i = 0; i < num_tilesets; ++i)
 			{

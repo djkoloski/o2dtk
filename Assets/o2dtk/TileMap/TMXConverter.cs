@@ -246,7 +246,7 @@ namespace o2dtk
 			string tilemap_name = Path.GetFileNameWithoutExtension(tmx_path);
 			string tilemap_dir = Path.Combine(tmx_dir, tilemap_name);
 			string tilemap_path = Path.Combine(tilemap_dir, tilemap_name + ".tilemap");
-			string tilesets_dir = Path.Combine(tilemap_dir, "tilesets");
+			string tilesets_dir = Open2D.settings.tilesets_root;
 			string chunks_dir = Path.Combine(tilemap_dir, "chunks");
 
 			XmlReader reader = XmlReader.Create(tmx_path);
