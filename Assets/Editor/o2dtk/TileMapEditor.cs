@@ -95,33 +95,34 @@ namespace o2dtk
 
 			GUI.enabled = tileMap.loaded;
 			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunk left:");
-			chunk_left = EditorGUILayout.IntField(chunk_left);
+			GUILayout.Label("Chunk Range: (0,0) - (" + tileMap.width/tileMap.chunk_width + "," + tileMap.height/tileMap.chunk_height + ")" );
 			GUILayout.EndHorizontal();
 			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunk bottom:");
+			GUILayout.Label("Bottom Left Chunk (x,y):");
+			GUILayout.EndHorizontal();
+			GUILayout.BeginHorizontal();
+			chunk_left = EditorGUILayout.IntField(chunk_left);
 			chunk_bottom = EditorGUILayout.IntField(chunk_bottom);
 			GUILayout.EndHorizontal();
 			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunks X:");
-			chunks_x = EditorGUILayout.IntField(chunks_x);
+			GUILayout.Label("Top Right Chunk (x,y):");
 			GUILayout.EndHorizontal();
 			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunks Y:");
+			chunks_x = EditorGUILayout.IntField(chunks_x);
 			chunks_y = EditorGUILayout.IntField(chunks_y);
 			GUILayout.EndHorizontal();
 
 			GUILayout.BeginHorizontal();
 			if (GUILayout.Button("Load chunks"))
 			{
-				for (uint y = 0; y < chunks_y; ++y)
-					for (uint x = 0; x < chunks_x; ++x)
+				for (uint y = 0; y < chunks_y - chunk_bottom; ++y)
+					for (uint x = 0; x < chunks_x - chunk_left; ++x)
 						tileMap.LoadChunk((uint)(chunk_left + x), (uint)(chunk_bottom + y));
 			}
 			if (GUILayout.Button("Unload chunks"))
 			{
-				for (uint y = 0; y < chunks_y; ++y)
-					for (uint x = 0; x < chunks_x; ++x)
+				for (uint y = 0; y < chunks_y - chunk_bottom; ++y)
+					for (uint x = 0; x < chunks_x - chunk_left; ++x)
 						tileMap.UnloadChunk((uint)(chunk_left + x), (uint)(chunk_bottom + y));
 			}
 			GUILayout.EndHorizontal();
