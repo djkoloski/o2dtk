@@ -64,6 +64,16 @@ namespace o2dtk
 			}
 		}
 
+		// Updates the named entry in the settings and saves the settings if applicable
+		public static void UpdateSettingsEntry(string key, string value)
+		{
+			if (settings[key] != value)
+			{
+				settings[key] = value;
+				SaveSettings();
+			}
+		}
+
 		// Loads the settings for the toolkit
 		// If no settings file is found, makes a new settings file and loads that
 		public static void LoadSettings()

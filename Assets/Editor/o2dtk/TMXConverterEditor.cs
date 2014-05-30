@@ -25,61 +25,25 @@ namespace o2dtk
 
 		public void OnGUI()
 		{
-			GUILayout.Space(5);
+			tmx_file = Utility.GUI.LabeledFileField("TMX file:", tmx_file);
+
+			Utility.GUI.Label("Conversion settings:");
+
+			settings.rebuild_tilesets = Utility.GUI.BeginToggleGroup("Rebuild tilesets", settings.rebuild_tilesets);
+
+			settings.force_rebuild_tilesets = Utility.GUI.Toggle("Force", settings.force_rebuild_tilesets);
+
+			Utility.GUI.EndToggleGroup();
+
+			settings.rebuild_chunks = Utility.GUI.Toggle("Rebuild chunks", settings.rebuild_chunks);
+
+			settings.chunk_width = (uint)Utility.GUI.LabeledIntField("Chunk width:", (int)settings.chunk_width);
 			
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("TMX file:");
-			GUILayout.FlexibleSpace();
-			tmx_file = EditorGUILayout.ObjectField(tmx_file, typeof(Object), true);
-			GUILayout.EndHorizontal();
+			settings.chunk_height = (uint)Utility.GUI.LabeledIntField("Chunk height:", (int)settings.chunk_height);
 
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Conversion settings:");
-			GUILayout.EndHorizontal();
+			tmx_dir = Utility.GUI.LabeledDirectoryField("Output directory:", tmx_dir);
 
-			GUILayout.BeginHorizontal();
-			settings.rebuild_tilesets = GUILayout.Toggle(settings.rebuild_tilesets, "Rebuild tilesets");
-			GUILayout.EndHorizontal();
-
-			GUI.enabled = settings.rebuild_tilesets;
-			GUILayout.BeginHorizontal();
-			settings.force_rebuild_tilesets = GUILayout.Toggle(settings.force_rebuild_tilesets && GUI.enabled, "Force");
-			GUILayout.EndHorizontal();
-			GUI.enabled = true;
-
-			GUILayout.BeginHorizontal();
-			settings.rebuild_chunks = GUILayout.Toggle(settings.rebuild_chunks, "Rebuild chunks");
-			GUILayout.EndHorizontal();
-
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunk width:");
-			settings.chunk_width = (uint)EditorGUILayout.IntField((int)settings.chunk_width);
-			GUILayout.EndHorizontal();
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunk height:");
-			settings.chunk_height = (uint)EditorGUILayout.IntField((int)settings.chunk_height);
-			GUILayout.EndHorizontal();
-
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Destination directory (None for default):");
-			GUILayout.EndHorizontal();
-			GUILayout.BeginHorizontal();
-			Object new_tmx_dir = EditorGUILayout.ObjectField(tmx_dir, typeof(Object), true);
-			GUILayout.EndHorizontal();
-
-			if (new_tmx_dir != tmx_dir)
-			{
-				string path = AssetDatabase.GetAssetPath(new_tmx_dir);
-				FileAttributes attr = File.GetAttributes(path);
-
-				if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
-					tmx_dir = new_tmx_dir;
-				else
-					EditorUtility.DisplayDialog("Invalid destination directory", "The given object is not a directory.", "OK");
-			}
-
-			GUILayout.BeginHorizontal();
-			if (GUILayout.Button("Convert TMX"))
+			if (Utility.GUI.Button("Convert TMX"))
 			{
 				bool load = true;
 
@@ -96,7 +60,6 @@ namespace o2dtk
 				if (load)
 					TMXConverter.LoadTMX(AssetDatabase.GetAssetPath(tmx_file), settings, (tmx_dir == null ? Open2D.settings["tilemaps_root"] : AssetDatabase.GetAssetPath(tmx_dir)));
 			}
-			GUILayout.EndHorizontal();
 		}
 	}
 }

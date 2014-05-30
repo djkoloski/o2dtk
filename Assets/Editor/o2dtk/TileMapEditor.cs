@@ -42,71 +42,47 @@ namespace o2dtk
 				tilemap_file = null;
 		}
 
-		// Makes a spaced label in the inspector
-		void SpacedLabel(string label, string value)
-		{
-			GUILayout.BeginHorizontal();
-			GUILayout.Label(label);
-			GUILayout.FlexibleSpace();
-			GUILayout.Label(value);
-			GUILayout.EndHorizontal();
-		}
-
 		// Draws the information GUI
 		void InfoGUI()
 		{
 			if (tileMap.loaded)
 			{
-				SpacedLabel("Width:", tileMap.width + " tiles");
-				SpacedLabel("Height:", tileMap.height + " tiles");
-				SpacedLabel("Tile Layers:", tileMap.tile_layers.Count.ToString());
-				SpacedLabel("Object Layers:", tileMap.object_layers.Count.ToString());
-				SpacedLabel("Chunk Width:", tileMap.chunk_width.ToString());
-				SpacedLabel("Chunk Height:", tileMap.chunk_height.ToString());
-				SpacedLabel("Tile width:", tileMap.tile_width.ToString());
-				SpacedLabel("Tile height:", tileMap.tile_height.ToString());
+				Utility.GUI.Label("Width:", tileMap.width + " tiles");
+				Utility.GUI.Label("Height:", tileMap.height + " tiles");
+				Utility.GUI.Label("Tile Layers:", tileMap.tile_layers.Count.ToString());
+				Utility.GUI.Label("Object Layers:", tileMap.object_layers.Count.ToString());
+				Utility.GUI.Label("Chunk Width:", tileMap.chunk_width.ToString());
+				Utility.GUI.Label("Chunk Height:", tileMap.chunk_height.ToString());
+				Utility.GUI.Label("Tile width:", tileMap.tile_width.ToString());
+				Utility.GUI.Label("Tile height:", tileMap.tile_height.ToString());
 			}
 			else
-			{
-				GUILayout.BeginHorizontal();
-				GUILayout.Label("Tile map not loaded");
-				GUILayout.EndHorizontal();
-			}
+				Utility.GUI.Label("Tile map not loaded");
 		}
 
 		// Draws the tile map loading GUI
 		void LoadGUI()
 		{
-			GUILayout.BeginHorizontal();
-			if (GUILayout.Button("Unload tile map"))
+			if (Utility.GUI.Button("Unload tile map"))
 				tileMap.Clear();
-			GUILayout.EndHorizontal();
 
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Tile map file:");
-			GUILayout.FlexibleSpace();
-			tilemap_file = EditorGUILayout.ObjectField(tilemap_file, typeof(Object), true);
-			GUILayout.EndHorizontal();
+			tilemap_file = Utility.GUI.LabeledFileField("Tile map file:", tilemap_file);
 
-			GUILayout.BeginHorizontal();
-			if (GUILayout.Button("Load tile map"))
+			if (Utility.GUI.Button("Load tile map"))
 				tileMap.LoadFromFile(tilemap_file);
-			GUILayout.EndHorizontal();
 
 			GUI.enabled = tileMap.loaded;
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunk Range: (0,0) - (" + tileMap.chunks_x + "," + tileMap.chunks_y + ")" );
-			GUILayout.EndHorizontal();
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Bottom Left Chunk (x,y):");
-			GUILayout.EndHorizontal();
+			
+			Utility.GUI.Label("Chunk Range: (0,0) - (" + tileMap.chunks_x + "," + tileMap.chunks_y + ")" );
+			Utility.GUI.Label("Bottom Left Chunk (x,y):");
+
 			GUILayout.BeginHorizontal();
 			chunk_left = EditorGUILayout.IntField(chunk_left);
 			chunk_bottom = EditorGUILayout.IntField(chunk_bottom);
 			GUILayout.EndHorizontal();
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Top Right Chunk (x,y):");
-			GUILayout.EndHorizontal();
+			
+			Utility.GUI.Label("Top Right Chunk (x,y):");
+			
 			GUILayout.BeginHorizontal();
 			chunks_x = EditorGUILayout.IntField(chunks_x);
 			chunks_y = EditorGUILayout.IntField(chunks_y);
@@ -126,6 +102,8 @@ namespace o2dtk
 						tileMap.UnloadChunk((uint)(chunk_left + x), (uint)(chunk_bottom + y));
 			}
 			GUILayout.EndHorizontal();
+
+			GUI.enabled = true;
 		}
 
 		public override void OnInspectorGUI()
