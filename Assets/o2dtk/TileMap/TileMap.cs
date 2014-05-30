@@ -31,6 +31,8 @@ namespace o2dtk
 		{
 			get
 			{
+				if (!loaded)
+					return 0;
 				return ((width + chunk_width - 1) / chunk_width);
 			}
 		}
@@ -39,6 +41,8 @@ namespace o2dtk
 		{
 			get
 			{
+				if (!loaded)
+					return 0;
 				return ((height + chunk_height - 1) / chunk_height);
 			}
 		}
@@ -110,7 +114,8 @@ namespace o2dtk
 			
 			string file_path = AssetDatabase.GetAssetPath(tilemap_file);
 			string file_dir = Path.GetDirectoryName(file_path);
-			string chunks_dir = Path.Combine(file_dir, "chunks");
+			string file_name = Path.GetFileNameWithoutExtension(file_path);
+			string chunks_dir = Path.Combine(file_dir, file_name + "_chunks");
 
 			TileChunk chunk = TileChunk.Load(Path.Combine(chunks_dir, chunk_x + "_" + chunk_y + ".chunk"), TileChunk.LoadMode.DataRenderObjects, this, new TileChunk());
 
@@ -169,7 +174,7 @@ namespace o2dtk
 
 			uint num_tilesets = input.ReadUInt32();
 
-			string tilesets_dir = Open2D.settings.tilesets_root;
+			string tilesets_dir = Open2D.settings["tilesets_root"];
 
 			for (uint i = 0; i < num_tilesets; ++i)
 			{

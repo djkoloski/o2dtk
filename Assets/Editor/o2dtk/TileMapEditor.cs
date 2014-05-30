@@ -95,7 +95,7 @@ namespace o2dtk
 
 			GUI.enabled = tileMap.loaded;
 			GUILayout.BeginHorizontal();
-			GUILayout.Label("Chunk Range: (0,0) - (" + tileMap.width/tileMap.chunk_width + "," + tileMap.height/tileMap.chunk_height + ")" );
+			GUILayout.Label("Chunk Range: (0,0) - (" + tileMap.chunks_x + "," + tileMap.chunks_y + ")" );
 			GUILayout.EndHorizontal();
 			GUILayout.BeginHorizontal();
 			GUILayout.Label("Bottom Left Chunk (x,y):");

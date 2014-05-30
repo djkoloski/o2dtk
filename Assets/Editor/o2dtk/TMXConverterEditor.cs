@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
+using System.IO;
 
 namespace o2dtk
 {
@@ -13,6 +14,8 @@ namespace o2dtk
 		private static Object tmx_file = null;
 		// The settings to convert the TMX file with
 		private static TMXImportSettings settings = new TMXImportSettings();
+		// The directory to put the converted TMX file in
+		private static Object tmx_dir = null;
 
 		[MenuItem("Open 2D/Tile Maps/TMX Converter")]
 		public static void OpenTMXConverter()
@@ -58,6 +61,24 @@ namespace o2dtk
 			GUILayout.EndHorizontal();
 
 			GUILayout.BeginHorizontal();
+			GUILayout.Label("Destination directory (None for default):");
+			GUILayout.EndHorizontal();
+			GUILayout.BeginHorizontal();
+			Object new_tmx_dir = EditorGUILayout.ObjectField(tmx_dir, typeof(Object), true);
+			GUILayout.EndHorizontal();
+
+			if (new_tmx_dir != tmx_dir)
+			{
+				string path = AssetDatabase.GetAssetPath(new_tmx_dir);
+				FileAttributes attr = File.GetAttributes(path);
+
+				if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
+					tmx_dir = new_tmx_dir;
+				else
+					EditorUtility.DisplayDialog("Invalid destination directory", "The given object is not a directory.", "OK");
+			}
+
+			GUILayout.BeginHorizontal();
 			if (GUILayout.Button("Convert TMX"))
 			{
 				bool load = true;
@@ -73,7 +94,7 @@ namespace o2dtk
 				}
 
 				if (load)
-					TMXConverter.LoadTMX(AssetDatabase.GetAssetPath(tmx_file), settings);
+					TMXConverter.LoadTMX(AssetDatabase.GetAssetPath(tmx_file), settings, (tmx_dir == null ? Open2D.settings["tilemaps_root"] : AssetDatabase.GetAssetPath(tmx_dir)));
 			}
 			GUILayout.EndHorizontal();
 		}

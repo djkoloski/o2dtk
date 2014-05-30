@@ -240,19 +240,19 @@ namespace o2dtk
 
 		// Loads a TMX and converts its representation into a format
 		//   compatible with the Open 2D Toolkit
-		public static void LoadTMX(string tmx_path, TMXImportSettings settings)
+		public static void LoadTMX(string tmx_path, TMXImportSettings settings, string dest_dir)
 		{
 			string tmx_dir = Path.GetDirectoryName(tmx_path);
 			string tilemap_name = Path.GetFileNameWithoutExtension(tmx_path);
-			string tilemap_dir = Path.Combine(tmx_dir, tilemap_name);
-			string tilemap_path = Path.Combine(tilemap_dir, tilemap_name + ".tilemap");
-			string tilesets_dir = Open2D.settings.tilesets_root;
-			string chunks_dir = Path.Combine(tilemap_dir, "chunks");
+			string tilemap_path = Path.Combine(dest_dir, tilemap_name + ".tilemap");
+			string tilesets_dir = Open2D.settings["tilesets_root"];
+			string chunks_dir = Path.Combine(dest_dir, tilemap_name + "_chunks");
 
 			XmlReader reader = XmlReader.Create(tmx_path);
 
 			// Create a directory for the tile map
-			Directory.CreateDirectory(tilemap_dir);
+			if (!Directory.Exists(dest_dir))
+				Directory.CreateDirectory(dest_dir);
 
 			uint map_width = 0;
 			uint map_height = 0;
@@ -430,6 +430,8 @@ namespace o2dtk
 			output.Write(0);
 
 			out_stream.Close();
+
+			AssetDatabase.Refresh();
 		}
 	}
 }

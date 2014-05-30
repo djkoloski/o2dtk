@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEditor;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 
@@ -8,13 +10,38 @@ namespace o2dtk
 	// A number of settings for the Open 2D toolkit
 	public class Open2DSettings
 	{
-		// The directory where the tile sets are saved
-		public string tilesets_root;
+		// The settings in the 2D toolkit
+		private Dictionary<string, string> entries_;
+		// A readonly version of the entries
+		public Dictionary<string, string> entries
+		{
+			get
+			{
+				return entries_;
+			}
+		}
+
+		public string this[string key]
+		{
+			get
+			{
+				if (entries.ContainsKey(key))
+					return entries[key];
+				return "";
+			}
+			set
+			{
+				entries[key] = value;
+			}
+		}
 
 		// Default constructor
 		public Open2DSettings()
 		{
-			tilesets_root = "Assets/TileSets";
+			entries_ = new Dictionary<string, string>();
+			
+			entries_.Add("tilesets_root", "Assets/TileSets");
+			entries_.Add("tilemaps_root", "Assets/TileMaps");
 		}
 	}
 	
@@ -50,17 +77,8 @@ namespace o2dtk
 
 			while (input.Read())
 			{
-				if (input.NodeType == XmlNodeType.Element)
-				{
-					switch (input.Name)
-					{
-						case "tilesetsroot":
-							settings_.tilesets_root = input.GetAttribute("path");
-							break;
-						default:
-							break;
-					}
-				}
+				if (input.NodeType == XmlNodeType.Element && input.Name == "entry")
+					settings_[input.GetAttribute("key")] = input.GetAttribute("value");
 			}
 
 			input.Close();
@@ -74,8 +92,16 @@ namespace o2dtk
 
 			XmlWriter output = XmlWriter.Create(settings_path);
 
-			output.WriteStartElement("tilesetsroot");
-			output.WriteAttributeString("path", settings_.tilesets_root);
+			output.WriteStartElement("settings");
+
+			foreach (KeyValuePair<string, string> pair in settings_.entries)
+			{
+				output.WriteStartElement("entry");
+				output.WriteAttributeString("key", pair.Key);
+				output.WriteAttributeString("value", pair.Value);
+				output.WriteEndElement();
+			}
+			
 			output.WriteEndElement();
 
 			output.Close();
