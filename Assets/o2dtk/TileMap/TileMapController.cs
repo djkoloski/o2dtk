@@ -29,6 +29,13 @@ namespace o2dtk
 
 			// Whether the controller has been initialized
 			private bool ready = false;
+			public bool is_ready
+			{
+				get
+				{
+					return ready;
+				}
+			}
 
 			public void Awake()
 			{
@@ -162,7 +169,7 @@ namespace o2dtk
 			{
 				Transform target_transform = render_transform.Find(pos_x + "_" + pos_y);
 
-				if (target_transform = null)
+				if (target_transform == null)
 					return;
 
 				GameObject target = target_transform.gameObject;
