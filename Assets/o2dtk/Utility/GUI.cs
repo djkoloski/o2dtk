@@ -51,7 +51,7 @@ namespace o2dtk
 			}
 
 			// Puts a toggle on a horizontal line
-			public static bool Toggle(string label, bool value)
+			public static bool LabeledToggle(string label, bool value)
 			{
 				GUILayout.BeginHorizontal();
 
@@ -88,8 +88,36 @@ namespace o2dtk
 				return value;
 			}
 
+			// Draws a labeled floating point number field on single horizontal line
+			public static float LabeledFloatField(string label, float value)
+			{
+				GUILayout.BeginHorizontal();
+
+				GUILayout.Label(label);
+				GUILayout.FlexibleSpace();
+				value = EditorGUILayout.FloatField(value);
+
+				GUILayout.EndHorizontal();
+
+				return value;
+			}
+
+			// Draws a labeled text field on a single horitonztal line
+			public static string LabeledTextField(string label, string value)
+			{
+				GUILayout.BeginHorizontal();
+
+				GUILayout.Label(label);
+				GUILayout.FlexibleSpace();
+				value = EditorGUILayout.TextField(value);
+
+				GUILayout.EndHorizontal();
+
+				return value;
+			}
+
 			// Draws a labeled object field on a single horizontal line
-			public static Object LabeledObjectField(string label, Object obj, bool allow_game_objects = false)
+			public static Object LabeledObjectField(string label, Object obj, System.Type type = null, bool allow_game_objects = false)
 			{
 				GUILayout.BeginHorizontal();
 

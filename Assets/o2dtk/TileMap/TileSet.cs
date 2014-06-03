@@ -1,44 +1,22 @@
 using UnityEngine;
-using UnityEditor;
 using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 
 namespace o2dtk
 {
-	public class TileSet
+	namespace TileMap
 	{
-		// The name of the tile set
-		public string name;
-		// The width of each tile in the tile set
-		public uint slice_width;
-		// The height of each tile in the tile set
-		public uint slice_height;
-		// The X offset of each tile in the tile set
-		public int offset_x;
-		// The Y offset of each tile in the tile set
-		public int offset_y;
-		// The first GID of the tile set
-		public uint first_gid;
-
-		// The materials of the tiles in the tile set
-		public List<Material> materials;
-
-		// Default constructor
-		public TileSet()
+		[System.Serializable]
+		public class TileSet : ScriptableObject
 		{
-			materials = new List<Material>();
-		}
+			// The size of each tile in the tile set in pixels
+			public int slice_size_x;
+			public int slice_size_y;
+			// The offset to render each tile with
+			public int offset_x;
+			public int offset_y;
 
-		// Loads the given number of tiles from the given folder
-		public void LoadFromDir(string path, uint num_tiles)
-		{
-			for (uint i = 0; i < num_tiles; ++i)
-			{
-				string tile_mat_path = Path.Combine(path, "tile_" + i + ".mat");
-				Material tile_mat = AssetDatabase.LoadAssetAtPath(tile_mat_path, typeof(Material)) as Material;
-				materials.Add(tile_mat);
-			}
+			// The sprites in the tile set
+			public Sprite[] tiles;
 		}
 	}
 }

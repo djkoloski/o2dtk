@@ -4,64 +4,93 @@ using System.Collections.Generic;
 
 namespace o2dtk
 {
-	public class TileLibrary
+	namespace TileMap
 	{
-		// A cache of the tilesets that contain certain GIDs to make lookup faster
-		private Dictionary<uint, TileSet> tileset_cache;
-		// The tilesets currently in the library
-		public List<TileSet> tilesets;
-
-		// Default constructor
-		public TileLibrary()
+		[System.Serializable]
+		public class TileLibrary
 		{
-			tileset_cache = new Dictionary<uint, TileSet>();
-			tilesets = new List<TileSet>();
-		}
-
-		// Finds the tileset that contains the given GID
-		public TileSet GetTilesetWithGID(uint gid)
-		{
-			if (tileset_cache.ContainsKey(gid))
-				return tileset_cache[gid];
-			
-			int index = 0;
-
-			for (; index < tilesets.Count; ++index)
+			[System.Serializable]
+			private class TileSetInfo : System.IComparable<TileSetInfo>
 			{
-				if (tilesets[index].first_gid > gid)
+				// The tile set
+				public TileSet tile_set;
+				// The first ID in the tile set
+				public int first_id;
+
+				// Basic constructor
+				public TileSetInfo(TileSet ts, int fid)
 				{
-					--index;
-					break;
+					tile_set = ts;
+					first_id = fid;
+				}
+
+				// Compares two tile set infos' first ids against each other
+				public int CompareTo(TileSetInfo other)
+				{
+					if (other.first_id > first_id)
+						return -1;
+					else if (other.first_id < first_id)
+						return 1;
+					else
+						return 0;
 				}
 			}
+			
+			// The tile sets in the library sorted by first ID in the tile set
+			[SerializeField]
+			private List<TileSetInfo> tile_sets;
 
-			if (index < 0 || index >= tilesets.Count || gid - tilesets[index].first_gid >= tilesets[index].materials.Count)
+			// Default constructor
+			public TileLibrary()
 			{
-				Debug.LogWarning("Attempted to find tile with GID " + gid + ", but no tile set contains that GID");
-				return null;
+				tile_sets = new List<TileSetInfo>();
 			}
 
-			tileset_cache[gid] = tilesets[index];
-			return tilesets[index];
-		}
+			// Adds a tile set to the library starting with the given ID
+			public void AddTileSet(TileSet tile_set, int first_id)
+			{
+				TileSetInfo tsi = new TileSetInfo(tile_set, first_id);
+				int nearest = tile_sets.BinarySearch(tsi);
 
-		// Gets the texture of the tile with the given GID
-		public Material GetMaterialByGID(uint gid)
-		{
-			TileSet ts = GetTilesetWithGID(gid);
+				if (nearest > 0)
+					return;
 
-			if (ts == null)
+				tile_sets.Insert(~nearest, tsi);
+			}
+
+			// Gets the tile set that has the given ID in its range and
+			//   adjusts the passed ID to the local index in the tile set
+			public TileSet GetTileSetAndIndex(ref int id)
+			{
+				int i = 0;
+
+				for (; i < tile_sets.Count; ++i)
+				{
+					if (tile_sets[i].first_id > id)
+					{
+						--i;
+						break;
+					}
+				}
+
+				if (i < 0 || i >= tile_sets.Count || id - tile_sets[i].first_id >= tile_sets[i].tile_set.tiles.Length)
+					return null;
+
+				id -= tile_sets[i].first_id;
+				return tile_sets[i].tile_set;
+			}
+
+			// Gets the sprite in the tile set corresponding to the given
+			//   range and ID
+			public Sprite GetTileSprite(int id)
+			{
+				TileSet tile_set = GetTileSetAndIndex(ref id);
+
+				if (tile_set != null)
+					return tile_set.tiles[id];
+
 				return null;
-
-			gid -= ts.first_gid;
-
-			return ts.materials[(int)gid];
-		}
-
-		// Adds a tile set to the library (tile sets must be added in ascending order of GIDs)
-		public void AddTileSet(TileSet tileset)
-		{
-			tilesets.Add(tileset);
+			}
 		}
 	}
 }

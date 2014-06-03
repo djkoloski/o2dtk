@@ -7,431 +7,427 @@ using System.Xml;
 
 namespace o2dtk
 {
-	public class TMXImportSettings
+	namespace TileMap
 	{
-		// Whether the tile sets should be rebuilt (tiles sliced if they don't exist)
-		public bool rebuild_tilesets;
-		// Whether the tile sets should be rebuilt regardless of whether tiles exist
-		public bool force_rebuild_tilesets;
-		// Whether the chunks should be rebuilt
-		public bool rebuild_chunks;
-		// The width of each chunk
-		public uint chunk_width;
-		// The height of each chunk
-		public uint chunk_height;
-
-		// Default constructor
-		public TMXImportSettings()
+		public class TMXImportSettings
 		{
-			rebuild_tilesets = false;
-			force_rebuild_tilesets = false;
-			rebuild_chunks = false;
-			chunk_width = 0;
-			chunk_height = 0;
-		}
-	}
+			// The path to the input TMX file
+			public string input_path;
+			// The directory where the map should be saved when done
+			public string output_dir;
+			// The name of the tile map when it is saved
+			public string output_name;
+			// The directory where the tile sets should be put
+			//   This should be a project folder like Assets/TileSets
+			public string tile_sets_dir;
+			// The directory where the tile map chunks and other dynamic information should be put
+			//   This should be (Assets/Resources/)TileMapName/
+			public string resources_dir;
 
-	public class TMXTileSetInfo
-	{
-		// The name of the tile set
-		public string name;
-		// The slice width of the tile set
-		public uint slice_width;
-		// The slice height of the tile set
-		public uint slice_height;
-		// The X offset of the tiles in the tile set
-		public uint offset_x;
-		// The Y offset of the tiles in the tile set
-		public uint offset_y;
-		// The first GID of the tile set
-		public uint first_gid;
-		// The number of tiles in the tile set
-		public uint num_tiles;
+			// Whether the chunks of the tile set should be rebuilt
+			public bool rebuild_chunks;
+			// The size of each chunk
+			public int chunk_size_x;
+			public int chunk_size_y;
 
-		// Default constructor
-		public TMXTileSetInfo()
-		{
-			name = "undefined";
-			slice_width = 0;
-			slice_height = 0;
-			offset_x = 0;
-			offset_y = 0;
-			first_gid = 0;
-			num_tiles = 0;
-		}
-	}
-
-	public class TMXLayerInfo
-	{
-		// The name of the layer
-		public string name;
-		// The width of the layer in tiles
-		public uint layer_width;
-		// The height of the layer in tiles
-		public uint layer_height;
-		// The GIDs of the layer
-		public uint[,] gids;
-
-		// Default constructor
-		public TMXLayerInfo()
-		{
-			name = "undefined";
-			layer_width = 0;
-			layer_height = 0;
-			gids = null;
-		}
-	}
-
-	public class TMXConverter
-	{
-		// Takes an image at a path and determines how many tiles of a given size are in it
-		public static uint CountTilesInImage(string image_path, uint slice_width, uint slice_height)
-		{
-			Texture2D image = AssetDatabase.LoadAssetAtPath(image_path, typeof(Texture2D)) as Texture2D;
-			return (uint)((image.width / slice_width) * (image.height / slice_height));
-		}
-		
-		// Takes an image at a path and slices it into a set of tiles
-		public static void SliceTileSet(string image_path, uint slice_width, uint slice_height, string tileset_dir, bool force)
-		{
-			string progress_bar_title = "Loading '" + Path.GetFileName(image_path) + "'";
-			EditorUtility.DisplayProgressBar(progress_bar_title, "Preparing tile atlas", 0.0f);
-			
-			if (!Directory.Exists(tileset_dir))
-				Directory.CreateDirectory(tileset_dir);
-
-			// Prepare the image by allowing reading
-			TextureImporter image_imp = AssetImporter.GetAtPath(image_path) as TextureImporter;
-
-			image_imp.textureType = TextureImporterType.Advanced;
-			image_imp.isReadable = true;
-
-			AssetDatabase.ImportAsset(image_path);
-
-			Texture2D image = AssetDatabase.LoadAssetAtPath(image_path, typeof(Texture2D)) as Texture2D;
-			Color32[] image_pixels = image.GetPixels32();
-			Texture2D cur_tile = new Texture2D((int)slice_width, (int)slice_height);
-			Color32[] pixels = new Color32[slice_width * slice_height];
-
-			uint total_tiles = (uint)((image.width / slice_width) * (image.height / slice_height));
-			uint cur_x = 0;
-			uint cur_y = 0;
-			uint index = 0;
-
-			while (cur_y + slice_height <= image.height)
+			// Default constructor
+			public TMXImportSettings()
 			{
-				while (cur_x + slice_width <= image.width)
-				{
-					EditorUtility.DisplayProgressBar(progress_bar_title, "Building tile " + (index + 1) + " / " + total_tiles, (float)index / total_tiles);
-					string tile_tex_path = Path.Combine(tileset_dir, "tile_" + index + ".png");
-					string tile_mat_path = Path.Combine(tileset_dir, "tile_" + index + ".mat");
+				input_path = "";
+				output_dir = "";
+				output_name = "";
+				tile_sets_dir = "";
+				resources_dir = "";
 
-					if (File.Exists(tile_tex_path))
+				rebuild_chunks = false;
+				chunk_size_x = 0;
+				chunk_size_y = 0;
+			}
+		}
+
+		public class TMXImporter
+		{
+			// Makes a sliced tile sprite asset name from its coordinates
+			public static string MakeTileSpriteAssetName(int size_x, int size_y, int index)
+			{
+				return "tile_" + size_x + "x" + size_y + "_" + index;
+			}
+
+			// Parses a sliced tile sprite asset name into its coordinates or fails
+			public static bool ParseTileSpriteAssetName(string asset_name, out int size_x, out int size_y, out int index)
+			{
+				char[] delims = {'x', '_'};
+				string[] coords = asset_name.Split(delims);
+
+				size_x = 0;
+				size_y = 0;
+				index = 0;
+
+				if (coords.Length != 4)
+					return false;
+
+				if (coords[0] != "tile")
+					return false;
+
+				if (!int.TryParse(coords[1], out size_x) || !int.TryParse(coords[2], out size_y) || !int.TryParse(coords[3], out index))
+					return false;
+
+				return true;
+			}
+
+			// Makes a new tile set from an atlas and a slicing size then saves it to the tile set directory
+			public static TileSet MakeTileSet(string source_path, int slice_size_x, int slice_size_y, TMXImportSettings settings)
+			{
+				Texture2D atlas = AssetDatabase.LoadAssetAtPath(source_path, typeof(Texture2D)) as Texture2D;
+
+				int tiles_x = atlas.width / slice_size_x;
+				int tiles_y = atlas.height / slice_size_y;
+				int tile_count = tiles_x * tiles_y;
+
+				string name = Path.GetFileNameWithoutExtension(source_path) + "_" + slice_size_x + "x" + slice_size_y;
+
+				TileSet tile_set = ScriptableObject.CreateInstance<TileSet>();
+				tile_set.slice_size_x = slice_size_x;
+				tile_set.slice_size_y = slice_size_y;
+				tile_set.offset_x = 0;
+				tile_set.offset_y = 0;
+				tile_set.tiles = new Sprite[tile_count];
+				tile_set.name = name;
+
+				int nudge_y = atlas.height - tiles_y * slice_size_y;
+
+				string dest_path = settings.tile_sets_dir + "/" + Path.GetFileName(source_path);
+
+				TextureImporter importer = null;
+				bool reimport_required = false;
+
+				if (!File.Exists(dest_path))
+					AssetDatabase.CopyAsset(source_path, dest_path);
+
+				AssetDatabase.ImportAsset(dest_path);
+
+				importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
+
+				importer.textureType = TextureImporterType.Sprite;
+				importer.textureFormat = TextureImporterFormat.AutomaticTruecolor;
+				importer.spriteImportMode = SpriteImportMode.Multiple;
+				importer.filterMode = FilterMode.Point;
+				importer.spritePivot = Vector2.zero;
+				importer.spritePixelsToUnits = 1.0f;
+
+				reimport_required = true;
+
+				bool[] skip_tiles = new bool[tile_count];
+				int add_tiles = tile_count;
+
+				int add_index = 0;
+
+				if (importer.spritesheet != null)
+				{
+					add_index = importer.spritesheet.Length;
+
+					foreach (SpriteMetaData meta in importer.spritesheet)
 					{
-						if (force)
-							File.Delete(tile_tex_path);
-						else
-						{
-							cur_x += slice_width;
+						int size_x = 0;
+						int size_y = 0;
+						int index = 0;
+
+						if (!ParseTileSpriteAssetName(meta.name, out size_x, out size_y, out index))
 							continue;
-						}
+
+						if (size_x != slice_size_x || size_y != slice_size_y)
+							continue;
+
+						skip_tiles[index] = true;
+						--add_tiles;
+					}
+				}
+
+				if (add_tiles > 0)
+				{
+					SpriteMetaData[] new_spritesheet = new SpriteMetaData[add_index + add_tiles];
+					System.Array.Copy(importer.spritesheet, new_spritesheet, add_index);
+
+					for (int i = 0; i < tile_count; ++i)
+					{
+						if (skip_tiles[i])
+							continue;
+
+						int x = i % tiles_x;
+						int y = tiles_y - i / tiles_x - 1;
+
+						SpriteMetaData new_meta = new SpriteMetaData();
+
+						new_meta.alignment = (int)SpriteAlignment.BottomLeft;
+						new_meta.name = MakeTileSpriteAssetName(slice_size_x, slice_size_y, i);
+						new_meta.pivot = Vector2.zero;
+						new_meta.rect = new Rect(x * slice_size_x, y * slice_size_y + nudge_y, slice_size_x, slice_size_y);
+
+						new_spritesheet[add_index++] = new_meta;
 					}
 
-					for (uint i = 0; i < slice_height; ++i)
-						System.Array.Copy(image_pixels, (image.height - i - cur_y - 1) * image.width + cur_x, pixels, (slice_height - i - 1) * slice_width, slice_width);
+					importer.spritesheet = new_spritesheet;
 
-					cur_tile.SetPixels32(pixels);
-
-					byte[] bytes = cur_tile.EncodeToPNG();
-					FileStream tex_fs = File.OpenWrite(tile_tex_path);
-					BinaryWriter bw = new BinaryWriter(tex_fs);
-					bw.Write(bytes);
-					tex_fs.Close();
-
-					AssetDatabase.ImportAsset(tile_tex_path);
-
-					Material mat = new Material(Shader.Find("Transparent/Diffuse"));
-					mat.mainTexture = AssetDatabase.LoadAssetAtPath(tile_tex_path, typeof(Texture2D)) as Texture2D;
-					AssetDatabase.CreateAsset(mat, tile_mat_path);
-
-					++index;
-					
-					cur_x += slice_width;
-				}
-				
-				cur_x = 0;
-				cur_y += slice_height;
-			}
-
-			EditorUtility.DisplayProgressBar(progress_bar_title, "Cleaning up", 1.0f);
-
-			Texture2D.DestroyImmediate(cur_tile);
-			AssetDatabase.SaveAssets();
-
-			EditorUtility.ClearProgressBar();
-		}
-
-		// Takes a list of layers and builds the chunks out of them
-		public static void WriteChunks(List<TMXLayerInfo> layers, uint map_width, uint map_height, uint width, uint height, string chunks_dir)
-		{
-			string progress_bar_title = "Building chunks";
-			EditorUtility.DisplayProgressBar(progress_bar_title, "Preparing layers", 0.0f);
-			
-			if (!Directory.Exists(chunks_dir))
-				Directory.CreateDirectory(chunks_dir);
-
-			uint chunks_x = (map_width + width - 1) / width;
-			uint chunks_y = (map_height + height - 1) / height;
-			uint total_chunks = chunks_x * chunks_y;
-			uint cur_x = 0;
-			uint cur_y = 0;
-			uint index = 0;
-
-			while (cur_y < map_height)
-			{
-				while (cur_x < map_width)
-				{
-					EditorUtility.DisplayProgressBar(progress_bar_title, "Building chunk " + (index % width) + "_" + (index / width) + " (" + (index + 1) + " / " + total_chunks, (float)index / total_chunks);
-					string chunk_path = Path.Combine(chunks_dir, (index % chunks_x) + "_" + (index / chunks_x) + ".chunk");
-
-					FileStream chunk_stream = File.OpenWrite(chunk_path);
-					BinaryWriter output = new BinaryWriter(chunk_stream);
-
-					uint data_width = (width < map_width - cur_x ? width : map_width - cur_x);
-					uint data_height = (height < map_height - cur_y ? height : map_height - cur_y);
-
-					output.Write(TileChunk.magic_number);
-					output.Write(cur_x);
-					output.Write(cur_y);
-					output.Write(data_width);
-					output.Write(data_height);
-					output.Write((uint)layers.Count);
-					// TODO replace with number of object layers
-					output.Write(0);
-
-					// TODO optimize chunk rendering
-
-					output.Write(TileChunk.header_size);
-					output.Write((uint)(TileChunk.header_size + layers.Count * data_width * data_height * 4));
-					output.Write((uint)(TileChunk.header_size + layers.Count * data_width * data_height * 4 + layers.Count * 4));
-
-					for (int i = 0; i < layers.Count; ++i)
-						for (uint y = 0; y < data_height; ++y)
-							for (uint x = 0; x < data_width; ++x)
-								output.Write(layers[i].gids[cur_x + x, cur_y + y]);
-
-					// TODO use index_size for the quad sizing
-					for (uint i = 0; i < layers.Count; ++i)
-						output.Write(0);
-
-					// TODO replace with object layers
-
-					++index;
-
-					cur_x += width;
+					reimport_required = true;
 				}
 
-				cur_x = 0;
-				cur_y += height;
+				if (reimport_required)
+					AssetDatabase.ImportAsset(dest_path);
+
+				Object[] assets = AssetDatabase.LoadAllAssetRepresentationsAtPath(dest_path);
+
+				foreach (Object asset in assets)
+				{
+					int size_x = 0;
+					int size_y = 0;
+					int index = 0;
+
+					if (!ParseTileSpriteAssetName(asset.name, out size_x, out size_y, out index))
+						continue;
+
+					if (size_x != slice_size_x || size_y != slice_size_y)
+						continue;
+
+					tile_set.tiles[index] = asset as Sprite;
+				}
+
+				string tile_set_dest = settings.tile_sets_dir + "/" + name + ".asset";
+
+				if (File.Exists(tile_set_dest))
+					AssetDatabase.DeleteAsset(tile_set_dest);
+
+				AssetDatabase.CreateAsset(tile_set, tile_set_dest);
+
+				return tile_set;
 			}
 
-			EditorUtility.ClearProgressBar();
-		}
-
-		// Loads a TMX and converts its representation into a format
-		//   compatible with the Open 2D Toolkit
-		public static void LoadTMX(string tmx_path, TMXImportSettings settings, string dest_dir)
-		{
-			string tmx_dir = Path.GetDirectoryName(tmx_path);
-			string tilemap_name = Path.GetFileNameWithoutExtension(tmx_path);
-			string tilemap_path = Path.Combine(dest_dir, tilemap_name + ".tilemap");
-			string tilesets_dir = Open2D.settings["tilesets_root"];
-			string chunks_dir = Path.Combine(dest_dir, tilemap_name + "_chunks");
-
-			XmlReader reader = XmlReader.Create(tmx_path);
-
-			// Create a directory for the tile map
-			if (!Directory.Exists(dest_dir))
-				Directory.CreateDirectory(dest_dir);
-
-			uint map_width = 0;
-			uint map_height = 0;
-			uint map_tile_width = 0;
-			uint map_tile_height = 0;
-			uint map_chunk_width = settings.chunk_width;
-			uint map_chunk_height = settings.chunk_height;
-
-			List<TMXTileSetInfo> tilesets = new List<TMXTileSetInfo>();
-			List<TMXLayerInfo> layers = new List<TMXLayerInfo>();
-
-			while (reader.Read())
+			// Creates and saves the chunks of a tile map to its resource directory
+			public static void BuildChunks(TileMap tile_map, List<TileChunkDataLayer> layers, TMXImportSettings settings)
 			{
-				if (reader.NodeType == XmlNodeType.Element)
+				string chunks_dir = settings.resources_dir + "/" + "chunks";
+
+				if (!Directory.Exists(chunks_dir))
+					Directory.CreateDirectory(chunks_dir);
+
+				int pos_x = 0;
+				int pos_y = 0;
+
+				while (pos_y + settings.chunk_size_y <= tile_map.size_y)
 				{
-					switch (reader.Name)
+					while (pos_x + settings.chunk_size_x <= tile_map.size_x)
 					{
-						case "map":
-							if (reader.GetAttribute("orientation") != "orthogonal")
-							{
-								Debug.LogError("Attempted to load a TMX file that was not oriented orthogonally.");
-								return;
-							}
+						TileChunk chunk = ScriptableObject.CreateInstance<TileChunk>();
 
-							map_width = uint.Parse(reader.GetAttribute("width"));
-							map_height = uint.Parse(reader.GetAttribute("height"));
-							map_tile_width = uint.Parse(reader.GetAttribute("tilewidth"));
-							map_tile_height = uint.Parse(reader.GetAttribute("tileheight"));
+						chunk.pos_x = pos_x;
+						chunk.pos_y = pos_y;
+						chunk.size_x = Mathf.Min(settings.chunk_size_x, tile_map.size_x - pos_x);
+						chunk.size_y = Mathf.Min(settings.chunk_size_y, tile_map.size_y - pos_y);
+						chunk.data_layers = new List<TileChunkDataLayer>();
 
-							break;
-						case "tileset":
-							TMXTileSetInfo tsi = new TMXTileSetInfo();
+						foreach (TileChunkDataLayer data_layer in layers)
+						{
+							TileChunkDataLayer chunk_layer = new TileChunkDataLayer(chunk.size_x, chunk.size_y);
 
-							tsi.slice_width = uint.Parse(reader.GetAttribute("tilewidth"));
-							tsi.slice_height = uint.Parse(reader.GetAttribute("tileheight"));
-							tsi.name = reader.GetAttribute("name") + "_" + tsi.slice_width + "x" + tsi.slice_height;
-							tsi.first_gid = uint.Parse(reader.GetAttribute("firstgid"));
+							for (int y = 0; y < chunk.size_y; ++y)
+								for (int x = 0; x < chunk.size_x; ++x)
+									chunk_layer.ids[y * chunk.size_x + x] = data_layer.ids[(chunk.pos_y + y) * tile_map.size_x + chunk.pos_x + x];
 
-							string image_path = "";
+							chunk.data_layers.Add(chunk_layer);
+						}
 
-							while (reader.Read())
-							{
-								if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "tileset")
-									break;
+						string chunk_dest = chunks_dir + "/" + (pos_x / settings.chunk_size_x) + "_" + (pos_y / settings.chunk_size_y) + ".asset";
 
-								if (reader.NodeType == XmlNodeType.Element && reader.Name == "image")
-									image_path = reader.GetAttribute("source");
-							}
+						if (File.Exists(chunk_dest))
+							AssetDatabase.DeleteAsset(chunk_dest);
 
-							image_path = Path.Combine(tmx_dir, image_path);
+						AssetDatabase.CreateAsset(chunk, chunk_dest);
 
-							tsi.num_tiles = CountTilesInImage(image_path, tsi.slice_width, tsi.slice_height);
+						pos_x += settings.chunk_size_x;
+					}
 
-							if (settings.rebuild_tilesets)
-								SliceTileSet(image_path, tsi.slice_width, tsi.slice_height, Path.Combine(tilesets_dir, tsi.name), settings.force_rebuild_tilesets);
+					pos_x = 0;
+					pos_y += settings.chunk_size_y;
+				}
+			}
 
-							tilesets.Add(tsi);
+			// Imports a TMX file into a format compatible with the 2D toolkit
+			public static void ImportTMX(TMXImportSettings settings)
+			{
+				string input_dir = Path.GetDirectoryName(settings.input_path);
 
-							break;
-						case "layer":
-							TMXLayerInfo tli = new TMXLayerInfo();
+				TileMap tile_map = ScriptableObject.CreateInstance<TileMap>();
 
-							tli.name = reader.GetAttribute("name");
-							uint width = uint.Parse(reader.GetAttribute("width"));
-							uint height = uint.Parse(reader.GetAttribute("height"));
-							tli.layer_width = width;
-							tli.layer_height = height;
+				tile_map.size_x = 0;
+				tile_map.size_y = 0;
+				tile_map.chunk_size_x = 0;
+				tile_map.chunk_size_y = 0;
+				tile_map.library = new TileLibrary();
+				tile_map.layer_info = new List<TileMapLayerInfo>();
+				tile_map.resources_dir = settings.resources_dir.Remove(0, 17).Replace('\\', '/');
 
-							if (!settings.rebuild_chunks)
-							{
-								layers.Add(tli);
-								break;
-							}
+				List<TileChunkDataLayer> data_layers = new List<TileChunkDataLayer>();
 
-							tli.gids = new uint[width, height];
+				XmlReader reader = XmlReader.Create(settings.input_path);
 
-							if (map_width == 0)
-								map_width = width;
-							if (map_height == 0)
-								map_height = height;
+				while (reader.Read())
+				{
+					if (reader.NodeType == XmlNodeType.Element)
+					{
+						switch (reader.Name)
+						{
+							case "map":
+								tile_map.size_x = int.Parse(reader.GetAttribute("width"));
+								tile_map.size_y = int.Parse(reader.GetAttribute("height"));
 
-							while (reader.Read())
-							{
-								if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "layer")
-									break;
+								int tile_size_x = int.Parse(reader.GetAttribute("tilewidth"));
+								int tile_size_y = int.Parse(reader.GetAttribute("tileheight"));
 
-								if (reader.NodeType == XmlNodeType.Element && reader.Name == "data")
+								switch (reader.GetAttribute("orientation"))
 								{
-									if (reader.GetAttribute("encoding") == "base64")
-									{
-										uint length = width * height;
-										byte[] buffer = new byte[length * 4];
-										reader.ReadElementContentAsBase64(buffer, 0, (int)(length * 4));
+									case "orthogonal":
+										tile_map.major_delta_x = tile_size_x;
+										tile_map.major_delta_y = 0;
+										tile_map.minor_delta_x = 0;
+										tile_map.minor_delta_y = tile_size_y;
+										tile_map.odd_delta_x = 0;
+										tile_map.odd_delta_y = 0;
+										break;
+									case "isometric":
+										tile_map.major_delta_x = tile_size_x / 2;
+										tile_map.major_delta_y = -tile_size_y / 2;
+										tile_map.minor_delta_x = tile_size_x / 2;
+										tile_map.minor_delta_y = tile_size_y / 2;
+										tile_map.odd_delta_x = 0;
+										tile_map.odd_delta_y = 0;
+										break;
+									case "staggered":
+										tile_map.major_delta_x = tile_size_x;
+										tile_map.major_delta_y = 0;
+										tile_map.minor_delta_x = 0;
+										tile_map.minor_delta_y = tile_size_y / 2;
+										tile_map.odd_delta_x = tile_size_x / 2;
+										tile_map.odd_delta_y = 0;
+										break;
+									default:
+										return;
+								}
 
-										for (uint i = 0; i < length; ++i)
-											tli.gids[i % width, height - i / width - 1] =
-												(uint)(
-													buffer[4 * i] |
-													(buffer[4 * i + 1] << 8) |
-													(buffer[4 * i + 2] << 16) |
-													(buffer[4 * i + 3] << 24)
-												);
-									}
-									else
-									{
-										uint index = 0;
+								break;
+							case "tileset":
+								int slice_size_x = int.Parse(reader.GetAttribute("tilewidth"));
+								int slice_size_y = int.Parse(reader.GetAttribute("tileheight"));
+								int first_id = int.Parse(reader.GetAttribute("firstgid"));
 
-										while (reader.Read())
+								string image_path = "";
+
+								while (reader.Read())
+								{
+									if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "tileset")
+										break;
+
+									if (reader.NodeType == XmlNodeType.Element && reader.Name == "image")
+										image_path = reader.GetAttribute("source");
+								}
+
+								image_path = input_dir + "/" + image_path;
+
+								TileSet tile_set = MakeTileSet(image_path, slice_size_x, slice_size_y, settings);
+
+								tile_map.library.AddTileSet(tile_set, first_id);
+
+								break;
+							case "layer":
+								TileMapLayerInfo layer_info = new TileMapLayerInfo();
+
+								int size_x = int.Parse(reader.GetAttribute("width"));
+								int size_y = int.Parse(reader.GetAttribute("height"));
+
+								layer_info.name = reader.GetAttribute("name");
+								layer_info.size_x = size_x;
+								layer_info.size_y = size_y;
+
+								tile_map.size_x = size_x;
+								tile_map.size_y = size_y;
+
+								if (settings.rebuild_chunks)
+								{
+									TileChunkDataLayer data_layer = new TileChunkDataLayer(size_x, size_y);
+
+									while (reader.Read())
+									{
+										if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "layer")
+											break;
+
+										if (reader.NodeType == XmlNodeType.Element && reader.Name == "data")
 										{
-											if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "data")
-												break;
-
-											if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
+											if (reader.GetAttribute("encoding") == "base64")
 											{
-												tli.gids[index % width, height - index / width - 1] = uint.Parse(reader.GetAttribute("gid"));
-												++index;
+												int length = size_x * size_y;
+												byte[] buffer = new byte[length * 4];
+												reader.ReadElementContentAsBase64(buffer, 0, length * 4);
+
+												for (int i = 0; i < length; ++i)
+												{
+													int x = i % size_x;
+													int y = size_y - i / size_x - 1;
+													data_layer.ids[y * size_x + x] =
+														buffer[4 * i] |
+														(buffer[4 * i + 1] << 8) |
+														(buffer[4 * i + 2] << 16) |
+														(buffer[4 * i + 3] << 24);
+												}
+											}
+											else
+											{
+												int index = 0;
+
+												while (reader.Read())
+												{
+													if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "data")
+														break;
+
+													if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
+													{
+														int x = index % size_x;
+														int y = size_y - index / size_x - 1;
+														data_layer.ids[y * size_x + x] = int.Parse(reader.GetAttribute("gid"));
+														++index;
+													}
+												}
 											}
 										}
 									}
+
+									data_layers.Add(data_layer);
 								}
-							}
 
-							layers.Add(tli);
+								tile_map.layer_info.Add(layer_info);
 
-							break;
-						default:
-							break;
+								break;
+							default:
+								break;
+						}
 					}
 				}
+
+				if (settings.chunk_size_x == 0)
+					settings.chunk_size_x = tile_map.size_x;
+				if (settings.chunk_size_y == 0)
+					settings.chunk_size_y = tile_map.size_y;
+				
+				tile_map.chunk_size_x = settings.chunk_size_x;
+				tile_map.chunk_size_y = settings.chunk_size_y;
+
+				if (settings.rebuild_chunks)
+					BuildChunks(tile_map, data_layers, settings);
+
+				string output_path = settings.output_dir + "/" + settings.output_name + ".asset";
+
+				if (File.Exists(output_path))
+					AssetDatabase.DeleteAsset(output_path);
+
+				AssetDatabase.CreateAsset(tile_map, output_path);
 			}
-
-			if (map_chunk_width == 0)
-				map_chunk_width = map_width;
-			if (map_chunk_height == 0)
-				map_chunk_height = map_height;
-
-			if (settings.rebuild_chunks)
-				WriteChunks(layers, map_width, map_height, map_chunk_width, map_chunk_height, chunks_dir);
-
-			// Write the data to the tilemap file
-			FileStream out_stream = File.OpenWrite(tilemap_path);
-			BinaryWriter output = new BinaryWriter(out_stream);
-
-			output.Write(TileMap.magic_number);
-			output.Write(map_width);
-			output.Write(map_height);
-			output.Write(map_tile_width);
-			output.Write(map_tile_height);
-			output.Write(map_chunk_width);
-			output.Write(map_chunk_height);
-
-			output.Write(tilesets.Count);
-
-			foreach (TMXTileSetInfo tileset in tilesets)
-			{
-				output.Write(tileset.name);
-				output.Write(tileset.slice_width);
-				output.Write(tileset.slice_height);
-				output.Write(tileset.offset_x);
-				output.Write(tileset.offset_y);
-				output.Write(tileset.first_gid);
-				output.Write(tileset.num_tiles);
-			}
-
-			output.Write(layers.Count);
-
-			foreach (TMXLayerInfo layer in layers)
-			{
-				output.Write(layer.name);
-				output.Write(layer.layer_width);
-				output.Write(layer.layer_height);
-			}
-
-			// TODO replace this with the number of object layers being written
-			output.Write(0);
-
-			out_stream.Close();
-
-			AssetDatabase.Refresh();
 		}
 	}
 }
