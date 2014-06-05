@@ -48,16 +48,16 @@ namespace o2dtk
 				GUILayout.BeginHorizontal();
 				GUILayout.Label("Bottom Left Chunk:");
 				GUILayout.FlexibleSpace();
-				lower_bound = EditorGUILayout.IntField(lower_bound);
 				left_bound = EditorGUILayout.IntField(left_bound);
+				lower_bound = EditorGUILayout.IntField(lower_bound);
 				GUILayout.EndHorizontal();
 
 				// Get the upper right bound chunk
 				GUILayout.BeginHorizontal();
 				GUILayout.Label("Top Right Chunk:");
 				GUILayout.FlexibleSpace();
-				upper_bound = EditorGUILayout.IntField(upper_bound);
 				right_bound = EditorGUILayout.IntField(right_bound);
+				upper_bound = EditorGUILayout.IntField(upper_bound);
 				GUILayout.EndHorizontal();
 
 				// Load and Unload buttons

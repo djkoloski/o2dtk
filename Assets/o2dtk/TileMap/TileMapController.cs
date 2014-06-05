@@ -123,9 +123,6 @@ namespace o2dtk
 			{
 				GameObject root = new GameObject(chunk_pos_x + "_" + chunk_pos_y);
 				Transform root_transform = root.GetComponent<Transform>();
-				root_transform.parent = render_root.GetComponent<Transform>();
-				root_transform.localPosition = Vector3.zero;
-				root_transform.localScale = Vector3.one;
 
 				for (int l = 0; l < chunk.data_layers.Count; ++l)
 				{
@@ -133,7 +130,6 @@ namespace o2dtk
 					Transform layer_transform = layer_root.GetComponent<Transform>();
 					layer_transform.parent = root_transform;
 					layer_transform.localPosition = new Vector3(0.0f, 0.0f, chunk.data_layers.Count - l - 1);
-					layer_transform.localScale = Vector3.one;
 
 					for (int y = 0; y < chunk.size_y; ++y)
 					{
@@ -183,6 +179,10 @@ namespace o2dtk
 						}
 					}
 				}
+
+				root_transform.parent = render_root.GetComponent<Transform>();
+				root_transform.localPosition = Vector3.zero;
+				root_transform.localScale = Vector3.one;
 			}
 
 			// Destroys a previously-built render chunk

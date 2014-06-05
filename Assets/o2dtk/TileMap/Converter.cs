@@ -210,7 +210,7 @@ namespace o2dtk
 			}
 
 			// Creates and saves the chunks of a tile map to its resource directory
-			public static void BuildChunks(TileMap tile_map, List<TileChunkDataLayer> layers, int chunk_size_x, int chunk_size_y, string resources_dir)
+			public static void BuildChunks(TileMap tile_map, List<TileChunkDataLayer> layers, int chunk_size_x, int chunk_size_y, string resources_dir, string progress_bar_title = null)
 			{
 				string chunks_dir = resources_dir + "/" + "chunks";
 
@@ -220,10 +220,17 @@ namespace o2dtk
 				int pos_x = 0;
 				int pos_y = 0;
 
+				int index = 0;
 				while (pos_y + chunk_size_y <= tile_map.size_y)
 				{
 					while (pos_x + chunk_size_x <= tile_map.size_x)
 					{
+						int index_x = index % tile_map.chunks_x;
+						int index_y = index / tile_map.chunks_x;
+
+						if (progress_bar_title != null)
+							EditorUtility.DisplayProgressBar(progress_bar_title, "Building chunk " + (index + 1) + " / " + tile_map.chunks_total + ": " + index_x + "_" + index_y, (float)index / (float)(tile_map.chunks_total - 1));
+
 						TileChunk chunk = ScriptableObject.CreateInstance<TileChunk>();
 
 						chunk.pos_x = pos_x;
@@ -243,7 +250,7 @@ namespace o2dtk
 							chunk.data_layers.Add(chunk_layer);
 						}
 
-						string chunk_dest = chunks_dir + "/" + (pos_x / chunk_size_x) + "_" + (pos_y / chunk_size_y) + ".asset";
+						string chunk_dest = chunks_dir + "/" + index_x + "_" + index_y + ".asset";
 
 						if (File.Exists(chunk_dest))
 							AssetDatabase.DeleteAsset(chunk_dest);
@@ -251,11 +258,14 @@ namespace o2dtk
 						AssetDatabase.CreateAsset(chunk, chunk_dest);
 
 						pos_x += chunk_size_x;
+						++index;
 					}
 
 					pos_x = 0;
 					pos_y += chunk_size_y;
 				}
+
+				EditorUtility.ClearProgressBar();
 			}
 		}
 	}

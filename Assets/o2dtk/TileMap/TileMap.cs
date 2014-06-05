@@ -57,6 +57,13 @@ namespace o2dtk
 					return (size_y + chunk_size_y - 1) / chunk_size_y;
 				}
 			}
+			public int chunks_total
+			{
+				get
+				{
+					return chunks_x * chunks_y;
+				}
+			}
 
 			// Gets the X coordinate of a tile given its X and Y
 			public int GetXCoordinate(int x, int y)

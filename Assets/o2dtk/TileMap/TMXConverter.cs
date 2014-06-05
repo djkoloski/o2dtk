@@ -85,7 +85,9 @@ namespace o2dtk
 								break;
 							case "image":
 								image_path = reader.GetAttribute("source");
-								transparent_color = int.Parse(reader.GetAttribute("trans"), System.Globalization.NumberStyles.HexNumber);
+								string transparent_attr = reader.GetAttribute("trans");
+								if (transparent_attr != null)
+									transparent_color = int.Parse(transparent_attr, System.Globalization.NumberStyles.HexNumber);
 								break;
 							default:
 								break;
@@ -97,6 +99,9 @@ namespace o2dtk
 			// Imports a TMX file into a format compatible with the 2D toolkit
 			public static void ImportTMX(TMXImportSettings settings)
 			{
+				string progress_bar_title = "Importing " + Path.GetFileName(settings.input_path);
+				EditorUtility.DisplayProgressBar(progress_bar_title, "Initializing", 0.0f);
+
 				string input_dir = Path.GetDirectoryName(settings.input_path);
 				string output_path = settings.output_dir + "/" + settings.output_name + ".asset";
 
@@ -129,6 +134,8 @@ namespace o2dtk
 						switch (reader.Name)
 						{
 							case "map":
+								EditorUtility.DisplayProgressBar(progress_bar_title, "Reading map data", 0.0f);
+
 								tile_map.size_x = int.Parse(reader.GetAttribute("width"));
 								tile_map.size_y = int.Parse(reader.GetAttribute("height"));
 
@@ -170,13 +177,13 @@ namespace o2dtk
 									case "staggered":
 										tile_map.major_delta_x = tile_size_x;
 										tile_map.major_delta_y = 0;
-										tile_map.major_delta_z = (settings.flip_major_precedence ? 2 : -2);
+										tile_map.major_delta_z = 0;
 										tile_map.minor_delta_x = 0;
 										tile_map.minor_delta_y = tile_size_y / 2;
-										tile_map.minor_delta_z = (settings.flip_minor_precedence ? 2 : -2);
-										tile_map.odd_delta_x = tile_size_x / 2;
+										tile_map.minor_delta_z = (settings.flip_minor_precedence ? 1 : -1);
+										tile_map.odd_delta_x = (tile_map.size_y % 2 == 0 ? -tile_size_x / 2 : tile_size_x / 2);
 										tile_map.odd_delta_y = 0;
-										tile_map.odd_delta_z = (settings.flip_major_precedence ? 1 : -1);
+										tile_map.odd_delta_z = 0;
 										break;
 									default:
 										return;
@@ -214,12 +221,14 @@ namespace o2dtk
 									while (tsx_reader.Read())
 										if (tsx_reader.NodeType == XmlNodeType.Element)
 											if (tsx_reader.Name == "tileset")
-													ReadTilesetNode(reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color);
+													ReadTilesetNode(tsx_reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color);
 
 									spacing_y = spacing_x;
 									margin_y = margin_x;
 									image_path = Path.Combine(tsx_dir, image_path);
 								}
+
+								EditorUtility.DisplayProgressBar(progress_bar_title, "Importing tile set '" + Path.GetFileName(image_path) + "' with " + spacing_x + " by " + spacing_y + " tiles", 0.0f);
 
 								TileSet tile_set =
 									Converter.MakeTileSet(
@@ -254,6 +263,8 @@ namespace o2dtk
 								tile_map.size_x = size_x;
 								tile_map.size_y = size_y;
 
+								EditorUtility.DisplayProgressBar(progress_bar_title, "Reading data for layer '" + layer_info.name + "'", 0.0f);
+
 								if (settings.rebuild_chunks)
 								{
 									TileChunkDataLayer data_layer = new TileChunkDataLayer(size_x, size_y);
@@ -287,6 +298,8 @@ namespace o2dtk
 													GZipStream gzip = new GZipStream(stream, CompressionMode.Decompress);
 													gzip.Read(buffer, 0, length * 4);
 												}
+												else
+													buffer = input;
 
 												for (int i = 0; i < length; ++i)
 												{
@@ -344,9 +357,13 @@ namespace o2dtk
 				}
 
 				if (settings.rebuild_chunks)
-					Converter.BuildChunks(tile_map, data_layers, settings.chunk_size_x, settings.chunk_size_y, settings.resources_dir);
+					Converter.BuildChunks(tile_map, data_layers, settings.chunk_size_x, settings.chunk_size_y, settings.resources_dir, progress_bar_title);
+
+				EditorUtility.DisplayProgressBar(progress_bar_title, "Saving", 1.0f);
 
 				AssetDatabase.SaveAssets();
+
+				EditorUtility.ClearProgressBar();
 			}
 		}
 	}
