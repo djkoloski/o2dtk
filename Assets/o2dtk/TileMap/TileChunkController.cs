@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using o2dtk.Collections;
 
 namespace o2dtk
 {
@@ -18,18 +19,27 @@ namespace o2dtk
 			// The transform of the chunk root
 			public new Transform transform;
 			// The sprites that must be updated regularly
-			public List<TileChunkAnimatedSpriteEntry> entries;
+			[System.Serializable]
+			public class TileChunkEntryMap : Map<int, TileChunkTileEntry>
+			{ }
+			public TileChunkEntryMap entries;
+
+			// Gets the index of a tile given its coordinates
+			public int GetTileIndex(int x, int y)
+			{
+				return y * chunk.size_x + x;
+			}
 
 			// Updates the chunk and its sprites
 			public void Update()
 			{
 				int milliseconds = (int)(Time.time * 1000);
 
-				foreach (TileChunkAnimatedSpriteEntry entry in entries)
+				foreach (KeyValuePair<int, TileChunkTileEntry> pair in entries)
 				{
-					int id = entry.original_id;
+					int id = pair.Value.original_id;
 					TileSet tile_set = tile_map.library.GetTileSetAndIndex(ref id);
-					entry.sprite_renderer.sprite = tile_set.tiles[tile_set.GetAnimatedTileIndex(id, milliseconds)];
+					pair.Value.sprite_renderer.sprite = tile_set.tiles[tile_set.GetAnimatedTileIndex(id, milliseconds)];
 				}
 			}
 
@@ -42,7 +52,7 @@ namespace o2dtk
 				index_y = tile_map_index_y;
 
 				transform = GetComponent<Transform>();
-				entries = new List<TileChunkAnimatedSpriteEntry>();
+				entries = new TileChunkEntryMap();
 
 				for (int l = 0; l < chunk.data_layers.Count; ++l)
 				{
@@ -94,7 +104,7 @@ namespace o2dtk
 							sr.color = new Color(1.0f, 1.0f, 1.0f, tile_map.layer_info[l].default_alpha);
 
 							if (tile_set.IsTileAnimated(local_id))
-								entries.Add(new TileChunkAnimatedSpriteEntry(global_id, sr));
+								entries.Add(GetTileIndex(x, y), new TileChunkTileEntry(x, y, new_sprite, global_id, sr));
 						}
 					}
 				}

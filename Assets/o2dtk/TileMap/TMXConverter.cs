@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
-using Ionic.Zlib;
 
 namespace o2dtk
 {
@@ -310,17 +309,9 @@ namespace o2dtk
 												byte[] input = System.Convert.FromBase64String(base64);
 
 												if (compression == "zlib")
-												{
-													MemoryStream stream = new MemoryStream(input);
-													ZlibStream zlib = new ZlibStream(stream, CompressionMode.Decompress);
-													zlib.Read(buffer, 0, length * 4);
-												}
+													Utility.Decompress.Zlib(input, buffer, length * 4);
 												else if (compression == "gzip")
-												{
-													MemoryStream stream = new MemoryStream(input);
-													GZipStream gzip = new GZipStream(stream, CompressionMode.Decompress);
-													gzip.Read(buffer, 0, length * 4);
-												}
+													Utility.Decompress.Gzip(input, buffer, length * 4);
 												else
 													buffer = input;
 

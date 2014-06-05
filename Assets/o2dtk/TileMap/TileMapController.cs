@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using o2dtk.Collections;
 
 namespace o2dtk
 {
@@ -18,7 +19,10 @@ namespace o2dtk
 			public new Transform transform = null;
 
 			// The chunks that are currently loaded
-			private Dictionary<int, TileChunkController> chunk_controllers = new Dictionary<int, TileChunkController>();
+			[System.Serializable]
+			public class ChunkControllerMap : Map<int, TileChunkController>
+			{ }
+			public ChunkControllerMap chunk_controllers = new ChunkControllerMap();
 
 			// The rendering root for the controller
 			public GameObject render_root = null;
@@ -54,7 +58,7 @@ namespace o2dtk
 
 				transform = GetComponent<Transform>();
 
-				chunk_controllers = new Dictionary<int, TileChunkController>();
+				chunk_controllers = new ChunkControllerMap();
 
 				render_root = new GameObject("render_root");
 				render_transform = render_root.GetComponent<Transform>();
