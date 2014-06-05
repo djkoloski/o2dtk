@@ -66,21 +66,27 @@ namespace o2dtk
 			}
 
 			// Gets the X coordinate of a tile given its X and Y
-			public int GetXCoordinate(int x, int y)
+			public int GetLocalXCoordinate(int x, int y)
 			{
 				return x * major_delta_x + y * minor_delta_x + (y % 2 == 1 ? odd_delta_x : 0);
 			}
 
 			// Gets the Y coordinate of a tile given its X and Y
-			public int GetYCoordinate(int x, int y)
+			public int GetLocalYCoordinate(int x, int y)
 			{
 				return x * major_delta_y + y * minor_delta_y + (y % 2 == 1 ? odd_delta_y : 0);
 			}
 
 			// Gets the Z coordinate of a tile given its X and Y
-			public int GetZCoordinate(int x, int y)
+			public int GetLocalZCoordinate(int x, int y)
 			{
 				return x * major_delta_z + y * minor_delta_z + (y % 2 == 1 ? odd_delta_z : 0);
+			}
+
+			// Gets the local position of a tile given its X and Y
+			public Vector2 GetLocalCoordinates(int x, int y)
+			{
+				return new Vector2(GetLocalXCoordinate(x, y), GetLocalYCoordinate(x, y));
 			}
 
 			// Gets the index of a certain chunk given its coordinates

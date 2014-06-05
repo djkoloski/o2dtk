@@ -15,20 +15,20 @@ namespace o2dtk
 			public float pixels_per_unit = 32.0f;
 
 			// The transform of the controller
-			private new Transform transform = null;
+			public new Transform transform = null;
 
 			// The chunks that are currently loaded
-			private Dictionary<int, TileChunk> chunks = null;
+			private Dictionary<int, TileChunk> chunks = new Dictionary<int, TileChunk>();
 
 			// The rendering root for the controller
-			private GameObject render_root = null;
-			private Transform render_transform = null;
+			public GameObject render_root = null;
+			public Transform render_transform = null;
 			// The chunk root for rendering
-			private GameObject chunk_root = null;
-			private Transform chunk_transform = null;
+			public GameObject chunk_root = null;
+			public Transform chunk_transform = null;
 
 			// Whether the controller has been initialized
-			private bool is_initialized = false;
+			public bool is_initialized = false;
 			public bool initialized
 			{
 				get
@@ -121,6 +121,8 @@ namespace o2dtk
 			// Builds renderable sprites out of a chunk's data
 			public void RenderChunk(TileChunk chunk, int chunk_pos_x, int chunk_pos_y)
 			{
+				DestroyChunk(chunk_pos_x, chunk_pos_y);
+
 				GameObject root = new GameObject(chunk_pos_x + "_" + chunk_pos_y);
 				Transform root_transform = root.GetComponent<Transform>();
 
@@ -163,18 +165,13 @@ namespace o2dtk
 
 							Transform sprite_transform = new_sprite.GetComponent<Transform>();
 							sprite_transform.parent = layer_transform;
-							sprite_transform.localPosition =
-								new Vector3(
-									tile_map.GetXCoordinate(map_pos_x, map_pos_y) + offset_x,
-									tile_map.GetYCoordinate(map_pos_x, map_pos_y) + offset_y,
-									0.0f
-								);
+							sprite_transform.localPosition = tile_map.GetLocalCoordinates(map_pos_x, map_pos_y) + new Vector2(offset_x, offset_y);
 							sprite_transform.localScale = new Vector3((flip_horiz ? -1.0f : 1.0f), (flip_vert ? -1.0f : 1.0f), 1.0f);
 							sprite_transform.localRotation = Quaternion.Euler(0, 0, (flip_diag ? 90 : 0));
 
 							SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
 							sr.sprite = use_sprite;
-							sr.sortingOrder = tile_map.GetZCoordinate(map_pos_x, map_pos_y);
+							sr.sortingOrder = tile_map.GetLocalZCoordinate(map_pos_x, map_pos_y);
 							sr.color = new Color(1.0f, 1.0f, 1.0f, tile_map.layer_info[l].default_alpha);
 						}
 					}

@@ -59,13 +59,8 @@ namespace o2dtk
 				string name = Path.GetFileNameWithoutExtension(source_path) + "_" + slice_size_x + "x" + slice_size_y;
 				string tile_set_dest = tile_sets_dir + "/" + name + ".asset";
 
-				if (File.Exists(tile_set_dest))
-				{
-					if (force_rebuild)
-						AssetDatabase.DeleteAsset(tile_set_dest);
-					else
-						return (TileSet)AssetDatabase.LoadAssetAtPath(tile_set_dest, typeof(TileSet));
-				}
+				if (File.Exists(tile_set_dest) && !force_rebuild)
+					return AssetDatabase.LoadAssetAtPath(tile_set_dest, typeof(TileSet)) as TileSet;
 
 				if (!File.Exists(dest_path))
 				{
@@ -81,7 +76,7 @@ namespace o2dtk
 				int nudge_x = atlas.width + spacing_x - 2 * margin_x - tiles_x * (slice_size_x + spacing_x);
 				int nudge_y = atlas.height + spacing_y - 2 * margin_y - tiles_y * (slice_size_y + spacing_y);
 
-				TileSet tile_set = ScriptableObject.CreateInstance<TileSet>();
+				TileSet tile_set = Utility.Asset.LoadAndEdit<TileSet>(tile_set_dest);
 				tile_set.slice_size_x = slice_size_x;
 				tile_set.slice_size_y = slice_size_y;
 				tile_set.offset_x = offset_x;
@@ -204,8 +199,6 @@ namespace o2dtk
 					tile_set.tiles[index] = asset as Sprite;
 				}
 
-				AssetDatabase.CreateAsset(tile_set, tile_set_dest);
-
 				return tile_set;
 			}
 
@@ -228,10 +221,12 @@ namespace o2dtk
 						int index_x = index % tile_map.chunks_x;
 						int index_y = index / tile_map.chunks_x;
 
+						string chunk_dest = chunks_dir + "/" + index_x + "_" + index_y + ".asset";
+
 						if (progress_bar_title != null)
 							EditorUtility.DisplayProgressBar(progress_bar_title, "Building chunk " + (index + 1) + " / " + tile_map.chunks_total + ": " + index_x + "_" + index_y, (float)index / (float)(tile_map.chunks_total - 1));
 
-						TileChunk chunk = ScriptableObject.CreateInstance<TileChunk>();
+						TileChunk chunk = Utility.Asset.LoadAndEdit<TileChunk>(chunk_dest);
 
 						chunk.pos_x = pos_x;
 						chunk.pos_y = pos_y;
@@ -250,12 +245,8 @@ namespace o2dtk
 							chunk.data_layers.Add(chunk_layer);
 						}
 
-						string chunk_dest = chunks_dir + "/" + index_x + "_" + index_y + ".asset";
-
 						if (File.Exists(chunk_dest))
 							AssetDatabase.DeleteAsset(chunk_dest);
-
-						AssetDatabase.CreateAsset(chunk, chunk_dest);
 
 						pos_x += chunk_size_x;
 						++index;

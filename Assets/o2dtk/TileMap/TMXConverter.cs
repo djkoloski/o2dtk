@@ -105,15 +105,7 @@ namespace o2dtk
 				string input_dir = Path.GetDirectoryName(settings.input_path);
 				string output_path = settings.output_dir + "/" + settings.output_name + ".asset";
 
-				TileMap tile_map = null;
-
-				if (File.Exists(output_path))
-					tile_map = (TileMap)AssetDatabase.LoadAssetAtPath(output_path, typeof(TileMap));
-				else
-				{
-					tile_map = ScriptableObject.CreateInstance<TileMap>();
-					AssetDatabase.CreateAsset(tile_map, output_path);
-				}
+				TileMap tile_map = Utility.Asset.LoadAndEdit<TileMap>(output_path);
 
 				tile_map.size_x = 0;
 				tile_map.size_y = 0;
@@ -358,10 +350,6 @@ namespace o2dtk
 
 				if (settings.rebuild_chunks)
 					Converter.BuildChunks(tile_map, data_layers, settings.chunk_size_x, settings.chunk_size_y, settings.resources_dir, progress_bar_title);
-
-				EditorUtility.DisplayProgressBar(progress_bar_title, "Saving", 1.0f);
-
-				AssetDatabase.SaveAssets();
 
 				EditorUtility.ClearProgressBar();
 			}
