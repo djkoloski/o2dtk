@@ -65,31 +65,16 @@ namespace o2dtk
 				int i = 0;
 
 				for (; i < tile_sets.Count; ++i)
-				{
 					if (tile_sets[i].first_id > id)
-					{
-						--i;
 						break;
-					}
-				}
+
+				--i;
 
 				if (i < 0 || i >= tile_sets.Count || id - tile_sets[i].first_id >= tile_sets[i].tile_set.tiles.Length)
 					return null;
 
 				id -= tile_sets[i].first_id;
 				return tile_sets[i].tile_set;
-			}
-
-			// Gets the sprite in the tile set corresponding to the given
-			//   range and ID
-			public Sprite GetTileSprite(int id)
-			{
-				TileSet tile_set = GetTileSetAndIndex(ref id);
-
-				if (tile_set != null)
-					return tile_set.tiles[id];
-
-				return null;
 			}
 		}
 	}

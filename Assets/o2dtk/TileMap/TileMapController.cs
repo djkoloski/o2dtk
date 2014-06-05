@@ -28,12 +28,16 @@ namespace o2dtk
 			private Transform chunk_transform = null;
 
 			// Whether the controller has been initialized
-			private bool ready = false;
-			public bool is_ready
+			private bool is_initialized = false;
+			public bool initialized
 			{
 				get
 				{
-					return ready;
+					return is_initialized;
+				}
+				private set
+				{
+					is_initialized = value;
 				}
 			}
 
@@ -45,7 +49,7 @@ namespace o2dtk
 			// Initializes the tile map controller
 			public void Begin()
 			{
-				if (ready)
+				if (initialized || tile_map == null)
 					return;
 
 				transform = GetComponent<Transform>();
@@ -63,22 +67,17 @@ namespace o2dtk
 				chunk_transform.parent = transform;
 				chunk_transform.localPosition = Vector3.zero;
 
-				ready = true;
+				initialized = true;
 			}
 
 			// Returns the tile map controller to its initial state
 			public void End()
 			{
-				if (!ready)
+				if (!initialized)
 					return;
 
-#if UNITY_EDITOR
-				GameObject.DestroyImmediate(render_root);
-				GameObject.DestroyImmediate(chunk_root);
-#else
-				GameObject.Destroy(render_root);
-				GameObject.Destroy(chunk_root);
-#endif
+				Utility.GameObject.Destroy(render_root);
+				Utility.GameObject.Destroy(chunk_root);
 
 				chunks = null;
 				render_root = null;
@@ -86,7 +85,7 @@ namespace o2dtk
 				chunk_root = null;
 				chunk_transform = null;
 
-				ready = false;
+				initialized = false;
 			}
 
 			// Loads the chunk at the given coordinates
@@ -140,10 +139,29 @@ namespace o2dtk
 					{
 						for (int x = 0; x < chunk.size_x; ++x)
 						{
-							Sprite use_sprite = tile_map.library.GetTileSprite(chunk.data_layers[l].ids[y * chunk.size_x + x]);
+							int map_pos_x = chunk.pos_x + x;
+							int map_pos_y = chunk.pos_y + y;
 
-							if (use_sprite == null)
+							int id = chunk.data_layers[l].ids[y * chunk.size_x + x];
+							bool flip_horiz = ((uint)id & 0x80000000) == 0x80000000;
+							bool flip_vert = ((uint)id & 0x40000000) == 0x40000000;
+							bool flip_diag = ((uint)id & 0x20000000) == 0x20000000;
+							if (flip_diag)
+							{
+								bool temp = flip_horiz;
+								flip_horiz = flip_vert ^ true;
+								flip_vert = temp;
+							}
+							id &= 0x1FFFFFFF;
+
+							TileSet tile_set = tile_map.library.GetTileSetAndIndex(ref id);
+
+							if (tile_set == null)
 								continue;
+
+							Sprite use_sprite = tile_set.tiles[id];
+							int offset_x = tile_set.offset_x;
+							int offset_y = tile_set.offset_y;
 
 							GameObject new_sprite = new GameObject(x + "_" + y);
 
@@ -151,14 +169,17 @@ namespace o2dtk
 							sprite_transform.parent = layer_transform;
 							sprite_transform.localPosition =
 								new Vector3(
-									tile_map.GetXCoordinate(chunk.pos_x + x, chunk.pos_y + y),
-									tile_map.GetYCoordinate(chunk.pos_x + x, chunk.pos_y + y),
+									tile_map.GetXCoordinate(map_pos_x, map_pos_y) + offset_x,
+									tile_map.GetYCoordinate(map_pos_x, map_pos_y) + offset_y,
 									0.0f
 								);
-							sprite_transform.localScale = Vector3.one;
+							sprite_transform.localScale = new Vector3((flip_horiz ? -1.0f : 1.0f), (flip_vert ? -1.0f : 1.0f), 1.0f);
+							sprite_transform.localRotation = Quaternion.Euler(0, 0, (flip_diag ? 90 : 0));
 
 							SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
 							sr.sprite = use_sprite;
+							sr.sortingOrder = tile_map.GetZCoordinate(map_pos_x, map_pos_y);
+							sr.color = new Color(1.0f, 1.0f, 1.0f, tile_map.layer_info[l].default_alpha);
 						}
 					}
 				}
@@ -174,11 +195,7 @@ namespace o2dtk
 
 				GameObject target = target_transform.gameObject;
 
-#if UNITY_EDITOR
-				GameObject.DestroyImmediate(target);
-#else
-				GameObject.Destroy(target);
-#endif
+				Utility.GameObject.Destroy(target);
 			}
 		}
 	}

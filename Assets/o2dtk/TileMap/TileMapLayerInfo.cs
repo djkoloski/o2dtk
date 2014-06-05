@@ -13,6 +13,8 @@ namespace o2dtk
 			// The size of the layer in tiles
 			public int size_x;
 			public int size_y;
+			// The default alpha value of all tiles in the layer
+			public float default_alpha;
 		}
 	}
 }

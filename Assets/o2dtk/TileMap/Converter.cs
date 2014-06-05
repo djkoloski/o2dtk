@@ -25,8 +25,7 @@ namespace o2dtk
 			// Parses a sliced tile sprite asset name into its coordinates or fails
 			public static bool ParseTileSpriteAssetName(string asset_name, out int size_x, out int size_y, out int index)
 			{
-				char[] delims = {'x', '_'};
-				string[] coords = asset_name.Split(delims);
+				string[] coords = asset_name.Split(new char[] {'x', '_'});
 
 				size_x = 0;
 				size_y = 0;
@@ -45,46 +44,61 @@ namespace o2dtk
 			}
 
 			// Makes a new tile set from an atlas and a slicing size then saves it to the tile set directory
-			public static TileSet MakeTileSet(string source_path, int slice_size_x, int slice_size_y, string tile_sets_dir)
+			public static TileSet MakeTileSet(
+				string source_path,
+				int margin_x, int margin_y,
+				int spacing_x, int spacing_y,
+				int slice_size_x, int slice_size_y,
+				int offset_x, int offset_y,
+				int transparent_color,
+				string tile_sets_dir,
+				bool force_rebuild
+				)
 			{
-				Texture2D atlas = AssetDatabase.LoadAssetAtPath(source_path, typeof(Texture2D)) as Texture2D;
-
-				int tiles_x = atlas.width / slice_size_x;
-				int tiles_y = atlas.height / slice_size_y;
-				int tile_count = tiles_x * tiles_y;
-
+				string dest_path = tile_sets_dir + "/" + Path.GetFileName(source_path);
 				string name = Path.GetFileNameWithoutExtension(source_path) + "_" + slice_size_x + "x" + slice_size_y;
+				string tile_set_dest = tile_sets_dir + "/" + name + ".asset";
+
+				if (File.Exists(tile_set_dest))
+				{
+					if (force_rebuild)
+						AssetDatabase.DeleteAsset(tile_set_dest);
+					else
+						return (TileSet)AssetDatabase.LoadAssetAtPath(tile_set_dest, typeof(TileSet));
+				}
+
+				if (!File.Exists(dest_path))
+				{
+					File.Copy(source_path, dest_path, false);
+					AssetDatabase.ImportAsset(dest_path);
+				}
+
+				Texture2D atlas = AssetDatabase.LoadAssetAtPath(dest_path, typeof(Texture2D)) as Texture2D;
+
+				int tiles_x = (atlas.width - 2 * margin_x + spacing_x) / (slice_size_x + spacing_x);
+				int tiles_y = (atlas.height - 2 * margin_y + spacing_y) / (slice_size_y + spacing_y);
+				int tile_count = tiles_x * tiles_y;
+				int nudge_x = atlas.width + spacing_x - 2 * margin_x - tiles_x * (slice_size_x + spacing_x);
+				int nudge_y = atlas.height + spacing_y - 2 * margin_y - tiles_y * (slice_size_y + spacing_y);
 
 				TileSet tile_set = ScriptableObject.CreateInstance<TileSet>();
 				tile_set.slice_size_x = slice_size_x;
 				tile_set.slice_size_y = slice_size_y;
-				tile_set.offset_x = 0;
-				tile_set.offset_y = 0;
+				tile_set.offset_x = offset_x;
+				tile_set.offset_y = offset_y;
 				tile_set.tiles = new Sprite[tile_count];
 				tile_set.name = name;
 
-				int nudge_y = atlas.height - tiles_y * slice_size_y;
-
-				string dest_path = tile_sets_dir + "/" + Path.GetFileName(source_path);
-
-				TextureImporter importer = null;
 				bool reimport_required = false;
-
-				if (!File.Exists(dest_path))
-					AssetDatabase.CopyAsset(source_path, dest_path);
-
-				AssetDatabase.ImportAsset(dest_path);
-
-				importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
+				TextureImporter importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
 
 				importer.textureType = TextureImporterType.Sprite;
-				importer.textureFormat = TextureImporterFormat.AutomaticTruecolor;
+				importer.textureFormat = (transparent_color >= 0 ? TextureImporterFormat.ARGB32 : TextureImporterFormat.AutomaticTruecolor);
 				importer.spriteImportMode = SpriteImportMode.Multiple;
 				importer.filterMode = FilterMode.Point;
 				importer.spritePivot = Vector2.zero;
 				importer.spritePixelsToUnits = 1.0f;
-
-				reimport_required = true;
+				importer.isReadable = (transparent_color >= 0);
 
 				bool[] skip_tiles = new bool[tile_count];
 				int add_tiles = tile_count;
@@ -127,10 +141,16 @@ namespace o2dtk
 
 						SpriteMetaData new_meta = new SpriteMetaData();
 
-						new_meta.alignment = (int)SpriteAlignment.BottomLeft;
+						new_meta.alignment = (int)SpriteAlignment.Center;
 						new_meta.name = MakeTileSpriteAssetName(slice_size_x, slice_size_y, i);
 						new_meta.pivot = Vector2.zero;
-						new_meta.rect = new Rect(x * slice_size_x, y * slice_size_y + nudge_y, slice_size_x, slice_size_y);
+						new_meta.rect =
+							new Rect(
+								margin_x + x * (slice_size_x + spacing_x) + nudge_x,
+								margin_y + y * (slice_size_y + spacing_y) + nudge_y,
+								slice_size_x,
+								slice_size_y
+							);
 
 						new_spritesheet[add_index++] = new_meta;
 					}
@@ -142,6 +162,30 @@ namespace o2dtk
 
 				if (reimport_required)
 					AssetDatabase.ImportAsset(dest_path);
+
+				if (transparent_color >= 0)
+				{
+					//atlas = AssetDatabase.LoadAssetAtPath(dest_path, typeof(Texture2D)) as Texture2D;
+					int r = transparent_color >> 16;
+					int g = (transparent_color >> 8) & 0xFF;
+					int b = transparent_color & 0xFF;
+
+					Color32[] pixels = atlas.GetPixels32();
+
+					for (int i = 0; i < pixels.Length; ++i)
+					{
+						if (pixels[i].r == r && pixels[i].g == g && pixels[i].b == b)
+							pixels[i].a = 0;
+					}
+
+					atlas.SetPixels32(pixels);
+					atlas.Apply();
+
+					File.WriteAllBytes(dest_path, atlas.EncodeToPNG());
+
+					importer.isReadable = false;
+					AssetDatabase.ImportAsset(dest_path);
+				}
 
 				Object[] assets = AssetDatabase.LoadAllAssetRepresentationsAtPath(dest_path);
 
@@ -159,11 +203,6 @@ namespace o2dtk
 
 					tile_set.tiles[index] = asset as Sprite;
 				}
-
-				string tile_set_dest = tile_sets_dir + "/" + name + ".asset";
-
-				if (File.Exists(tile_set_dest))
-					AssetDatabase.DeleteAsset(tile_set_dest);
 
 				AssetDatabase.CreateAsset(tile_set, tile_set_dest);
 

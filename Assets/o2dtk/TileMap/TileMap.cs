@@ -14,14 +14,17 @@ namespace o2dtk
 			// This is the amount advanced for each addition to the X coordinate of a tile
 			public int major_delta_x;
 			public int major_delta_y;
+			public int major_delta_z;
 			// The minor delta of the tile map in pixels
 			// This is the amount advanced for each addition to the Y coordinate of a tile
 			public int minor_delta_x;
 			public int minor_delta_y;
+			public int minor_delta_z;
 			// The even delta of the tile map in pixels
 			// This is the amount advanced if the Y coordinate of a tile is odd
 			public int odd_delta_x;
 			public int odd_delta_y;
+			public int odd_delta_z;
 
 			// The size of the tile map in tiles
 			public int size_x;
@@ -65,6 +68,12 @@ namespace o2dtk
 			public int GetYCoordinate(int x, int y)
 			{
 				return x * major_delta_y + y * minor_delta_y + (y % 2 == 1 ? odd_delta_y : 0);
+			}
+
+			// Gets the Z coordinate of a tile given its X and Y
+			public int GetZCoordinate(int x, int y)
+			{
+				return x * major_delta_z + y * minor_delta_z + (y % 2 == 1 ? odd_delta_z : 0);
 			}
 
 			// Gets the index of a certain chunk given its coordinates
