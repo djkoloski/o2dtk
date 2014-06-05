@@ -51,6 +51,7 @@ namespace o2dtk
 				int slice_size_x, int slice_size_y,
 				int offset_x, int offset_y,
 				int transparent_color,
+				TileAnimation[] animations,
 				string tile_sets_dir,
 				bool force_rebuild
 				)
@@ -83,6 +84,7 @@ namespace o2dtk
 				tile_set.offset_y = offset_y;
 				tile_set.tiles = new Sprite[tile_count];
 				tile_set.name = name;
+				tile_set.animations = animations;
 
 				bool reimport_required = false;
 				TextureImporter importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
@@ -244,9 +246,6 @@ namespace o2dtk
 
 							chunk.data_layers.Add(chunk_layer);
 						}
-
-						if (File.Exists(chunk_dest))
-							AssetDatabase.DeleteAsset(chunk_dest);
 
 						pos_x += chunk_size_x;
 						++index;

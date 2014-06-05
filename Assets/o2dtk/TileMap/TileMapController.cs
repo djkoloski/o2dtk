@@ -18,7 +18,7 @@ namespace o2dtk
 			public new Transform transform = null;
 
 			// The chunks that are currently loaded
-			private Dictionary<int, TileChunk> chunks = new Dictionary<int, TileChunk>();
+			private Dictionary<int, TileChunkController> chunk_controllers = new Dictionary<int, TileChunkController>();
 
 			// The rendering root for the controller
 			public GameObject render_root = null;
@@ -54,7 +54,7 @@ namespace o2dtk
 
 				transform = GetComponent<Transform>();
 
-				chunks = new Dictionary<int, TileChunk>();
+				chunk_controllers = new Dictionary<int, TileChunkController>();
 
 				render_root = new GameObject("render_root");
 				render_transform = render_root.GetComponent<Transform>();
@@ -64,8 +64,9 @@ namespace o2dtk
 
 				chunk_root = new GameObject("chunk_root");
 				chunk_transform = chunk_root.GetComponent<Transform>();
-				chunk_transform.parent = transform;
+				chunk_transform.parent = render_transform;
 				chunk_transform.localPosition = Vector3.zero;
+				chunk_transform.localScale = Vector3.one;
 
 				initialized = true;
 			}
@@ -79,7 +80,7 @@ namespace o2dtk
 				Utility.GameObject.Destroy(render_root);
 				Utility.GameObject.Destroy(chunk_root);
 
-				chunks = null;
+				chunk_controllers = null;
 				render_root = null;
 				render_transform = null;
 				chunk_root = null;
@@ -88,111 +89,41 @@ namespace o2dtk
 				initialized = false;
 			}
 
-			// Loads the chunk at the given coordinates
-			public void LoadChunk(int pos_x, int pos_y)
+			// Loads the chunk at the given indices
+			public void LoadChunk(int index_x, int index_y)
 			{
-				int index = tile_map.GetIndex(pos_x, pos_y);
+				int index = tile_map.GetIndex(index_x, index_y);
 
-				if (chunks.ContainsKey(index))
+				if (chunk_controllers.ContainsKey(index))
 					return;
 
-				TileChunk chunk = tile_map.LoadChunk(pos_x, pos_y);
+				TileChunk chunk = tile_map.LoadChunk(index_x, index_y);
 
 				if (chunk == null)
 					return;
 
-				chunks[index] = chunk;
-
-				RenderChunk(chunk, pos_x, pos_y);
+				chunk_controllers[index] = CreateChunk(chunk, index_x, index_y);
 			}
 
 			// Unloads the chunk at the given coordinates
-			public void UnloadChunk(int pos_x, int pos_y)
+			public void UnloadChunk(int index_x, int index_y)
 			{
-				int index = tile_map.GetIndex(pos_x, pos_y);
+				int index = tile_map.GetIndex(index_x, index_y);
 
-				if (chunks.ContainsKey(index))
+				if (chunk_controllers.ContainsKey(index))
 				{
-					chunks.Remove(index);
-					DestroyChunk(pos_x, pos_y);
+					Utility.GameObject.Destroy(chunk_controllers[index].gameObject);
+					chunk_controllers.Remove(index);
 				}
 			}
 
-			// Builds renderable sprites out of a chunk's data
-			public void RenderChunk(TileChunk chunk, int chunk_pos_x, int chunk_pos_y)
+			// Makes a chunk and returns it
+			public TileChunkController CreateChunk(TileChunk chunk, int index_x, int index_y)
 			{
-				DestroyChunk(chunk_pos_x, chunk_pos_y);
-
-				GameObject root = new GameObject(chunk_pos_x + "_" + chunk_pos_y);
-				Transform root_transform = root.GetComponent<Transform>();
-
-				for (int l = 0; l < chunk.data_layers.Count; ++l)
-				{
-					GameObject layer_root = new GameObject(tile_map.layer_info[l].name);
-					Transform layer_transform = layer_root.GetComponent<Transform>();
-					layer_transform.parent = root_transform;
-					layer_transform.localPosition = new Vector3(0.0f, 0.0f, chunk.data_layers.Count - l - 1);
-
-					for (int y = 0; y < chunk.size_y; ++y)
-					{
-						for (int x = 0; x < chunk.size_x; ++x)
-						{
-							int map_pos_x = chunk.pos_x + x;
-							int map_pos_y = chunk.pos_y + y;
-
-							int id = chunk.data_layers[l].ids[y * chunk.size_x + x];
-							bool flip_horiz = ((uint)id & 0x80000000) == 0x80000000;
-							bool flip_vert = ((uint)id & 0x40000000) == 0x40000000;
-							bool flip_diag = ((uint)id & 0x20000000) == 0x20000000;
-							if (flip_diag)
-							{
-								bool temp = flip_horiz;
-								flip_horiz = flip_vert ^ true;
-								flip_vert = temp;
-							}
-							id &= 0x1FFFFFFF;
-
-							TileSet tile_set = tile_map.library.GetTileSetAndIndex(ref id);
-
-							if (tile_set == null)
-								continue;
-
-							Sprite use_sprite = tile_set.tiles[id];
-							int offset_x = tile_set.offset_x;
-							int offset_y = tile_set.offset_y;
-
-							GameObject new_sprite = new GameObject(x + "_" + y);
-
-							Transform sprite_transform = new_sprite.GetComponent<Transform>();
-							sprite_transform.parent = layer_transform;
-							sprite_transform.localPosition = tile_map.GetLocalCoordinates(map_pos_x, map_pos_y) + new Vector2(offset_x, offset_y);
-							sprite_transform.localScale = new Vector3((flip_horiz ? -1.0f : 1.0f), (flip_vert ? -1.0f : 1.0f), 1.0f);
-							sprite_transform.localRotation = Quaternion.Euler(0, 0, (flip_diag ? 90 : 0));
-
-							SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
-							sr.sprite = use_sprite;
-							sr.sortingOrder = tile_map.GetLocalZCoordinate(map_pos_x, map_pos_y);
-							sr.color = new Color(1.0f, 1.0f, 1.0f, tile_map.layer_info[l].default_alpha);
-						}
-					}
-				}
-
-				root_transform.parent = render_root.GetComponent<Transform>();
-				root_transform.localPosition = Vector3.zero;
-				root_transform.localScale = Vector3.one;
-			}
-
-			// Destroys a previously-built render chunk
-			public void DestroyChunk(int pos_x, int pos_y)
-			{
-				Transform target_transform = render_transform.Find(pos_x + "_" + pos_y);
-
-				if (target_transform == null)
-					return;
-
-				GameObject target = target_transform.gameObject;
-
-				Utility.GameObject.Destroy(target);
+				GameObject chunk_go = new GameObject(index_x + "_" + index_y);
+				TileChunkController controller = chunk_go.AddComponent<TileChunkController>();
+				controller.LoadChunk(tile_map, chunk, index_x, index_y, chunk_transform);
+				return controller;
 			}
 		}
 	}

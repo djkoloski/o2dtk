@@ -59,7 +59,7 @@ namespace o2dtk
 		public class TMXImporter
 		{
 			// Reads the information out of a tileset XML node
-			private static void ReadTilesetNode(XmlReader reader, ref int slice_size_x, ref int slice_size_y, ref int spacing, ref int margin, ref int offset_x, ref int offset_y, ref string image_path, ref int transparent_color)
+			private static void ReadTilesetNode(XmlReader reader, ref int slice_size_x, ref int slice_size_y, ref int spacing, ref int margin, ref int offset_x, ref int offset_y, ref string image_path, ref int transparent_color, ref TileAnimation[] animations)
 			{
 				slice_size_x = int.Parse(reader.GetAttribute("tilewidth"));
 				slice_size_y = int.Parse(reader.GetAttribute("tileheight"));
@@ -88,6 +88,35 @@ namespace o2dtk
 								string transparent_attr = reader.GetAttribute("trans");
 								if (transparent_attr != null)
 									transparent_color = int.Parse(transparent_attr, System.Globalization.NumberStyles.HexNumber);
+								int tiles_x = int.Parse(reader.GetAttribute("width")) / slice_size_x;
+								int tiles_y = int.Parse(reader.GetAttribute("height")) / slice_size_y;
+								animations = new TileAnimation[tiles_x * tiles_y];
+								break;
+							case "tile":
+								int id = int.Parse(reader.GetAttribute("id"));
+
+								if (!reader.IsEmptyElement)
+								{
+									while (reader.Read())
+									{
+										if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "tile")
+											break;
+
+										if (reader.NodeType == XmlNodeType.Element && reader.Name == "animation")
+										{
+											animations[id] = new TileAnimation();
+
+											while (reader.Read())
+											{
+												if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "animation")
+													break;
+
+												if (reader.NodeType == XmlNodeType.Element && reader.Name == "frame")
+													animations[id].AddKey(new TileAnimationKey(int.Parse(reader.GetAttribute("tileid")), int.Parse(reader.GetAttribute("duration"))));
+											}
+										}
+									}
+								}
 								break;
 							default:
 								break;
@@ -195,10 +224,11 @@ namespace o2dtk
 								int transparent_color = -1;
 								string source = reader.GetAttribute("source");
 								string image_path = "";
+								TileAnimation[] animations = null;
 
 								if (source == null)
 								{
-									ReadTilesetNode(reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color);
+									ReadTilesetNode(reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color, ref animations);
 
 									spacing_y = spacing_x;
 									margin_y = margin_x;
@@ -213,7 +243,7 @@ namespace o2dtk
 									while (tsx_reader.Read())
 										if (tsx_reader.NodeType == XmlNodeType.Element)
 											if (tsx_reader.Name == "tileset")
-													ReadTilesetNode(tsx_reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color);
+													ReadTilesetNode(tsx_reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color, ref animations);
 
 									spacing_y = spacing_x;
 									margin_y = margin_x;
@@ -230,6 +260,7 @@ namespace o2dtk
 										slice_size_x, slice_size_y,
 										offset_x, offset_y,
 										transparent_color,
+										animations,
 										settings.tile_sets_dir,
 										settings.force_rebuild_tile_sets
 									);

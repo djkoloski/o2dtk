@@ -15,6 +15,15 @@ namespace o2dtk
 			public int size_y;
 			// The default alpha value of all tiles in the layer
 			public float default_alpha;
+
+			// Default constructor
+			public TileMapLayerInfo()
+			{
+				name = "";
+				size_x = 0;
+				size_y = 0;
+				default_alpha = 1.0f;
+			}
 		}
 	}
 }
