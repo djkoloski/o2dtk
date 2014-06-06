@@ -42,6 +42,15 @@ namespace o2dtk
 			//   Chunks are located at this/chunks/x_y.asset
 			public string resources_dir;
 
+			// Returns the total number of tiles in the map
+			public int tiles_total
+			{
+				get
+				{
+					return size_x * size_y;
+				}
+			}
+
 			// Returns the number of chunks in the map
 			public int chunks_x
 			{
@@ -63,6 +72,12 @@ namespace o2dtk
 				{
 					return chunks_x * chunks_y;
 				}
+			}
+
+			// Flips the index of a tile along the Y axis
+			public int FlipTileIndex(int index)
+			{
+				return (size_y - index / size_x - 1) * size_x + index % size_x;
 			}
 
 			// Gets the X coordinate of a tile given its X and Y

@@ -209,16 +209,18 @@ namespace o2dtk
 			{
 				string chunks_dir = resources_dir + "/" + "chunks";
 
-				if (!Directory.Exists(chunks_dir))
-					Directory.CreateDirectory(chunks_dir);
+				if (Directory.Exists(chunks_dir))
+					Directory.Delete(chunks_dir, true);
+
+				Directory.CreateDirectory(chunks_dir);
 
 				int pos_x = 0;
 				int pos_y = 0;
 
 				int index = 0;
-				while (pos_y + chunk_size_y <= tile_map.size_y)
+				while (pos_y < tile_map.size_y)
 				{
-					while (pos_x + chunk_size_x <= tile_map.size_x)
+					while (pos_x < tile_map.size_x)
 					{
 						int index_x = index % tile_map.chunks_x;
 						int index_y = index / tile_map.chunks_x;
@@ -256,6 +258,7 @@ namespace o2dtk
 				}
 
 				EditorUtility.ClearProgressBar();
+				AssetDatabase.Refresh();
 			}
 		}
 	}

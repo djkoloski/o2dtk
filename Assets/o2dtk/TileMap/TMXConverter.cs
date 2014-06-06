@@ -270,26 +270,18 @@ namespace o2dtk
 							case "layer":
 								TileMapLayerInfo layer_info = new TileMapLayerInfo();
 
-								int size_x = int.Parse(reader.GetAttribute("width"));
-								int size_y = int.Parse(reader.GetAttribute("height"));
-
 								layer_info.name = reader.GetAttribute("name");
-								layer_info.size_x = size_x;
-								layer_info.size_y = size_y;
 								string opacity_attr = reader.GetAttribute("opacity");
 								if (opacity_attr != null)
 									layer_info.default_alpha = float.Parse(opacity_attr);
 								else
 									layer_info.default_alpha = 1.0f;
 
-								tile_map.size_x = size_x;
-								tile_map.size_y = size_y;
-
 								EditorUtility.DisplayProgressBar(progress_bar_title, "Reading data for layer '" + layer_info.name + "'", 0.0f);
 
 								if (settings.rebuild_chunks)
 								{
-									TileChunkDataLayer data_layer = new TileChunkDataLayer(size_x, size_y);
+									TileChunkDataLayer data_layer = new TileChunkDataLayer(tile_map.size_x, tile_map.size_y);
 
 									while (reader.Read())
 									{
@@ -303,39 +295,31 @@ namespace o2dtk
 
 											if (encoding == "base64")
 											{
-												int length = size_x * size_y;
-												byte[] buffer = new byte[length * 4];
+												int bytes_total = 4 * tile_map.tiles_total;
+												byte[] buffer = new byte[bytes_total];
 												string base64 = reader.ReadElementContentAsString();
 												byte[] input = System.Convert.FromBase64String(base64);
 
 												if (compression == "zlib")
-													Utility.Decompress.Zlib(input, buffer, length * 4);
+													Utility.Decompress.Zlib(input, buffer, bytes_total);
 												else if (compression == "gzip")
-													Utility.Decompress.Gzip(input, buffer, length * 4);
+													Utility.Decompress.Gzip(input, buffer, bytes_total);
 												else
 													buffer = input;
 
-												for (int i = 0; i < length; ++i)
-												{
-													int x = i % size_x;
-													int y = size_y - i / size_x - 1;
-													data_layer.ids[y * size_x + x] =
+												for (int i = 0; i < tile_map.tiles_total; ++i)
+													data_layer.ids[tile_map.FlipTileIndex(i)] =
 														buffer[4 * i] |
 														(buffer[4 * i + 1] << 8) |
 														(buffer[4 * i + 2] << 16) |
 														(buffer[4 * i + 3] << 24);
-												}
 											}
 											else if (encoding == "csv")
 											{
 												string[] indices = reader.ReadElementContentAsString().Split(new char[]{','});
 
-												for (int index = 0; index < size_x * size_y; ++index)
-												{
-													int x = index % size_x;
-													int y = size_y - index / size_x - 1;
-													data_layer.ids[y * size_x + x] = (int)uint.Parse(indices[index]);
-												}
+												for (int index = 0; index < tile_map.tiles_total; ++index)
+													data_layer.ids[tile_map.FlipTileIndex(index)] = (int)uint.Parse(indices[index]);
 											}
 											else
 											{
@@ -348,9 +332,7 @@ namespace o2dtk
 
 													if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
 													{
-														int x = index % size_x;
-														int y = size_y - index / size_x - 1;
-														data_layer.ids[y * size_x + x] = (int)uint.Parse(reader.GetAttribute("gid"));
+														data_layer.ids[tile_map.FlipTileIndex(index)] = (int)uint.Parse(reader.GetAttribute("gid"));
 														++index;
 													}
 												}
