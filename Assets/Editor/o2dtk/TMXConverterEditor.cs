@@ -29,6 +29,8 @@ namespace o2dtk
 			public Object tile_sets_dir = null;
 			// The directory to put the map's resources in
 			public Object resources_dir = null;
+			// The file to use as a custom importer
+			public MonoScript importer_file = null;
 
 			[MenuItem("Open 2D/Tile Maps/TMX Importer")]
 			public static void OpenTMXConverter()
@@ -72,8 +74,11 @@ namespace o2dtk
 
 				flip_minor_precedence = Utility.GUI.LabeledToggle("Flip minor (Y) axis precedence", flip_minor_precedence);
 
+				importer_file = Utility.GUI.LabeledMonoScriptField("Import delegate:", importer_file);
+
 				if (Utility.GUI.Button("Import TMX"))
 				{
+					bool import = true;
 					TMXImportSettings settings = new TMXImportSettings();
 					settings.input_path = input_path;
 					settings.output_name = output_name;
@@ -86,8 +91,28 @@ namespace o2dtk
 					settings.output_dir = AssetDatabase.GetAssetPath(output_dir);
 					settings.tile_sets_dir = AssetDatabase.GetAssetPath(tile_sets_dir);
 					settings.resources_dir = Path.Combine(AssetDatabase.GetAssetPath(resources_dir), settings.output_name);
+					if (importer_file != null)
+					{
+						System.Type importer_type = importer_file.GetClass();
+						if (importer_type != null)
+						{
+							if (Utility.TypeInfo.ClassImplementsInterface(importer_type, typeof(TileMapImportDelegate)))
+								settings.importer = System.Activator.CreateInstance(importer_type) as TileMapImportDelegate;
+							else
+							{
+								EditorUtility.DisplayDialog("Invalid import delegate", "Import delegate found in file ('" + importer_type.FullName + "') does not implement TileMapImportDelegate.", "OK");
+								import = false;
+							}
+						}
+						else
+						{
+							EditorUtility.DisplayDialog("Invalid import delegate", "Import delegate file does not contain a valid import delegate", "OK");
+							import = false;
+						}
+					}
 
-					TMXImporter.ImportTMX(settings);
+					if (import)
+						TMXImporter.ImportTMX(settings);
 				}
 			}
 		}

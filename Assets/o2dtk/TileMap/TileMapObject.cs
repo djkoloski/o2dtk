@@ -12,9 +12,10 @@ namespace o2dtk
 			// The types of shapes available
 			public enum Type
 			{
-				Polygon,
+				Rectangle,
+				Ellipse,
 				Polyline,
-				Ellipse
+				Polygon
 			};
 
 			// The type of shape; indicates how to interpret the attribute data
@@ -23,29 +24,24 @@ namespace o2dtk
 			//   If it's a polygon or polyline, its vertices
 			//   If it's an ellipse, first its position, then width and height
 			public List<Vector2> points;
-			// Assuming the shape is an ellipse, gets the position of the ellipse
-			public Vector2 ellipse_pos
+			// Assuming the shape is an ellipse or rectangle, gets the dimensions of the shape
+			public Vector2 size
 			{
 				get
 				{
-					if (type != Type.Ellipse)
+					if (type != Type.Ellipse && type != Type.Rectangle)
 						throw new System.InvalidOperationException();
 					if (points.Count < 1)
 						throw new System.IndexOutOfRangeException();
 					return points[0];
 				}
 			}
-			// Assuming the shape is an ellipse, gets the dimensions of the ellipse
-			public Vector2 ellipse_size
+
+			// Basic constructor
+			public TileMapShape()
 			{
-				get
-				{
-					if (type != Type.Ellipse)
-						throw new System.InvalidOperationException();
-					if (points.Count < 2)
-						throw new System.IndexOutOfRangeException();
-					return points[1];
-				}
+				type = Type.Rectangle;
+				points = new List<Vector2>();
 			}
 		}
 
@@ -57,10 +53,20 @@ namespace o2dtk
 			public int layer_index;
 			// The position of the object
 			public Vector2 position;
-			// The shapes in the object
-			public List<TileMapShape> shapes;
+			// The shape of the object
+			public TileMapShape shape;
 			// The properties of the object
 			public PropertyMap properties;
+
+			// Basic constructor
+			public TileMapObject()
+			{
+				name = "";
+				layer_index = 0;
+				position = new Vector2();
+				shape = new TileMapShape();
+				properties = new PropertyMap();
+			}
 		}
 
 		public interface TileMapImportDelegate

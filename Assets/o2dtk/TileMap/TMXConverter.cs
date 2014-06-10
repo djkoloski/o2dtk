@@ -41,6 +41,9 @@ namespace o2dtk
 			// Whether to flip Z precedence along the minor axis
 			public bool flip_minor_precedence;
 
+			// The custom importer to use while importing objects
+			public TileMapImportDelegate importer;
+
 			// Default constructor
 			public TMXImportSettings()
 			{
@@ -177,6 +180,7 @@ namespace o2dtk
 				tile_map.resources_dir = Converter.GetRelativeResourcesPath(settings.resources_dir);
 
 				List<TileChunkDataLayer> data_layers = new List<TileChunkDataLayer>();
+				List<TileMapObject> objects = new List<TileMapObject>();
 
 				XmlReader reader = XmlReader.Create(settings.input_path);
 
@@ -425,6 +429,128 @@ namespace o2dtk
 								tile_map.layer_info.Add(layer_info);
 
 								break;
+							case "objectgroup":
+								TileMapLayerInfo object_group_info = new TileMapLayerInfo();
+
+								object_group_info.name = reader.GetAttribute("name");
+
+								EditorUtility.DisplayProgressBar(progress_bar_title, "Reading data for object group '" + object_group_info.name + "'", 0.0f);
+
+								while (reader.Read())
+								{
+									if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "objectgroup")
+										break;
+
+									if (reader.NodeType == XmlNodeType.Element)
+									{
+										switch (reader.Name)
+										{
+											case "object":
+												TileMapObject obj = new TileMapObject();
+												obj.name = reader.GetAttribute("name");
+												obj.layer_index = tile_map.layer_info.Count;
+												obj.position = new Vector2(int.Parse(reader.GetAttribute("x")), int.Parse(reader.GetAttribute("y")));
+												string width = reader.GetAttribute("width");
+												string height = reader.GetAttribute("height");
+												if (width != null && height != null)
+												{
+													obj.shape.type = TileMapShape.Type.Rectangle;
+													obj.shape.points.Add(new Vector2(int.Parse(width), int.Parse(height)));
+												}
+												obj.properties = new PropertyMap();
+
+												if (!reader.IsEmptyElement)
+												{
+													while (reader.Read())
+													{
+														if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "object")
+															break;
+
+														if (reader.NodeType == XmlNodeType.Element)
+														{
+															switch (reader.Name)
+															{
+																case "ellipse":
+																	obj.shape.type = TileMapShape.Type.Ellipse;
+																	break;
+																case "polyline":
+																{
+																	obj.shape.type = TileMapShape.Type.Polyline;
+																	string[] points = reader.GetAttribute("points").Split(new char[]{' '});
+
+																	foreach (string point in points)
+																	{
+																		string[] coords = point.Split(new char[]{','});
+																		obj.shape.points.Add(new Vector2(int.Parse(coords[0]), int.Parse(coords[1])));
+																	}
+																	break;
+																}
+																case "polygon":
+																{
+																	obj.shape.type = TileMapShape.Type.Polygon;
+																	string[] points = reader.GetAttribute("points").Split(new char[]{' '});
+
+																	foreach (string point in points)
+																	{
+																		string[] coords = point.Split(new char[]{','});
+																		obj.shape.points.Add(new Vector2(int.Parse(coords[0]), int.Parse(coords[1])));
+																	}
+																	break;
+																}
+																case "properties":
+																	while (reader.Read())
+																	{
+																		if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "properties")
+																			break;
+
+																		if (reader.NodeType == XmlNodeType.Element && reader.Name == "property")
+																		{
+																			string name = reader.GetAttribute("name");
+																			string val = reader.GetAttribute("value");
+																			if (val == null)
+																				val = reader.ReadElementContentAsString();
+																			obj.properties[name] = val;
+																		}
+																	}
+																	break;
+																default:
+																	break;
+															}
+														}
+													}
+												}
+
+												objects.Add(obj);
+
+												break;
+											case "properties":
+												object_group_info.properties = new PropertyMap();
+
+												while (reader.Read())
+												{
+													if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "properties")
+														break;
+
+													if (reader.NodeType == XmlNodeType.Element && reader.Name == "property")
+													{
+														string name = reader.GetAttribute("name");
+														string val = reader.GetAttribute("value");
+														if (val == null)
+															val = reader.ReadElementContentAsString();
+														object_group_info.properties[name] = val;
+													}
+												}
+
+												break;
+											default:
+												break;
+										}
+									}
+								}
+
+								tile_map.layer_info.Add(object_group_info);
+
+								break;
 							default:
 								break;
 						}
@@ -433,6 +559,10 @@ namespace o2dtk
 
 				if (settings.rebuild_chunks)
 					Converter.BuildChunks(tile_map, data_layers, settings.chunk_size_x, settings.chunk_size_y, settings.resources_dir, progress_bar_title);
+
+				if (settings.importer != null)
+					foreach (TileMapObject obj in objects)
+						settings.importer.ImportTileMapObject(obj, tile_map);
 
 				EditorUtility.ClearProgressBar();
 			}

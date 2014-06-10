@@ -166,6 +166,40 @@ namespace o2dtk
 
 			// Draws an object field in the GUI and returns a valid directory object
 			// If an invalid object is given, an error is displayed
+			public static MonoScript MonoScriptField(MonoScript file)
+			{
+				MonoScript obj = EditorGUILayout.ObjectField(file, typeof(MonoScript), false) as MonoScript;
+
+				if (obj != file)
+				{
+					string path = AssetDatabase.GetAssetPath(obj);
+					FileAttributes attr = File.GetAttributes(path);
+
+					if ((attr & FileAttributes.Directory) != FileAttributes.Directory)
+						return obj;
+					else
+						EditorUtility.DisplayDialog("Invalid input", "The given object is not a mono script", "OK");
+				}
+
+				return file;
+			}
+
+			// Draws a labeled object field and returns a valid directory object
+			public static MonoScript LabeledMonoScriptField(string label, MonoScript file)
+			{
+				GUILayout.BeginHorizontal();
+
+				GUILayout.Label(label);
+				GUILayout.FlexibleSpace();
+				file = MonoScriptField(file);
+
+				GUILayout.EndHorizontal();
+
+				return file;
+			}
+
+			// Draws an object field in the GUI and returns a valid directory object
+			// If an invalid object is given, an error is displayed
 			public static Object DirectoryField(Object dir)
 			{
 				Object obj = EditorGUILayout.ObjectField(dir, typeof(Object), false);

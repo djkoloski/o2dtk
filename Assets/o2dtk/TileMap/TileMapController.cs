@@ -45,6 +45,24 @@ namespace o2dtk
 				}
 			}
 
+			// Gets the X coordinate of a tile in the space relative to the parent of the controller
+			public float GetXCoordinate(int x, int y)
+			{
+				return tile_map.GetLocalXCoordinate(x, y) / pixels_per_unit + transform.localPosition.x;
+			}
+
+			// Gets the Y coordinate of a tile in the space relative to the parent of the controller
+			public float GetYCoordinate(int x, int y)
+			{
+				return tile_map.GetLocalYCoordinate(x, y) / pixels_per_unit + transform.localPosition.y;
+			}
+
+			// Gets the coordinates of a tile in the space relative to the parent of the controller
+			public Vector2 GetCoordinates(int x, int y)
+			{
+				return new Vector2(GetXCoordinate(x, y), GetYCoordinate(x, y));
+			}
+
 			public void Awake()
 			{
 				Begin();
