@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using o2dtk.Collections;
 
 namespace o2dtk
 {
@@ -17,6 +18,9 @@ namespace o2dtk
 
 			// The sprites in the tile set
 			public Sprite[] tiles;
+
+			// The properties of the sprites in the tile set
+			public PropertyMap[] properties;
 
 			// The animations in the tile set
 			//   A tile that is not animated has its respective entry set to null

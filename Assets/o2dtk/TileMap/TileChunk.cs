@@ -18,6 +18,8 @@ namespace o2dtk
 
 			// The data layers of the chunk
 			public List<TileChunkDataLayer> data_layers;
+			// The user data of the chunk
+			public List<ScriptableObject> user_data;
 		}
 	}
 }

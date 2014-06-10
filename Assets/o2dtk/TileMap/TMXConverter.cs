@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
+using o2dtk.Collections;
 
 namespace o2dtk
 {
@@ -29,6 +30,8 @@ namespace o2dtk
 			public bool force_rebuild_tile_sets;
 			// Whether the chunks of the tile set should be rebuilt
 			public bool rebuild_chunks;
+			// Whether object layers should be rebuilt
+			public bool rebuild_object_layers;
 			// The size of each chunk
 			public int chunk_size_x;
 			public int chunk_size_y;
@@ -58,7 +61,7 @@ namespace o2dtk
 		public class TMXImporter
 		{
 			// Reads the information out of a tileset XML node
-			private static void ReadTilesetNode(XmlReader reader, ref int slice_size_x, ref int slice_size_y, ref int spacing, ref int margin, ref int offset_x, ref int offset_y, ref string image_path, ref int transparent_color, ref TileAnimation[] animations)
+			private static void ReadTilesetNode(XmlReader reader, ref int slice_size_x, ref int slice_size_y, ref int spacing, ref int margin, ref int offset_x, ref int offset_y, ref string image_path, ref int transparent_color, ref TileAnimation[] animations, ref PropertyMap[] properties)
 			{
 				slice_size_x = int.Parse(reader.GetAttribute("tilewidth"));
 				slice_size_y = int.Parse(reader.GetAttribute("tileheight"));
@@ -90,6 +93,7 @@ namespace o2dtk
 								int tiles_x = int.Parse(reader.GetAttribute("width")) / slice_size_x;
 								int tiles_y = int.Parse(reader.GetAttribute("height")) / slice_size_y;
 								animations = new TileAnimation[tiles_x * tiles_y];
+								properties = new PropertyMap[tiles_x * tiles_y];
 								break;
 							case "tile":
 								int id = int.Parse(reader.GetAttribute("id"));
@@ -101,21 +105,49 @@ namespace o2dtk
 										if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "tile")
 											break;
 
-										if (reader.NodeType == XmlNodeType.Element && reader.Name == "animation")
+										if (reader.NodeType == XmlNodeType.Element)
 										{
-											animations[id] = new TileAnimation();
-
-											while (reader.Read())
+											switch (reader.Name)
 											{
-												if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "animation")
-													break;
+												case "animation":
+													animations[id] = new TileAnimation();
 
-												if (reader.NodeType == XmlNodeType.Element && reader.Name == "frame")
-													animations[id].AddKey(new TileAnimationKey(int.Parse(reader.GetAttribute("tileid")), int.Parse(reader.GetAttribute("duration"))));
+													while (reader.Read())
+													{
+														if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "animation")
+															break;
+
+														if (reader.NodeType == XmlNodeType.Element && reader.Name == "frame")
+															animations[id].AddKey(new TileAnimationKey(int.Parse(reader.GetAttribute("tileid")), int.Parse(reader.GetAttribute("duration"))));
+													}
+
+													break;
+												case "properties":
+													properties[id] = new PropertyMap();
+
+													while (reader.Read())
+													{
+														if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "properties")
+															break;
+
+														if (reader.NodeType == XmlNodeType.Element && reader.Name == "property")
+														{
+															string name = reader.GetAttribute("name");
+															string val = reader.GetAttribute("value");
+															if (val == null)
+																val = reader.ReadElementContentAsString();
+															properties[id][name] = val;
+														}
+													}
+
+													break;
+												default:
+													break;
 											}
 										}
 									}
 								}
+
 								break;
 							default:
 								break;
@@ -139,6 +171,7 @@ namespace o2dtk
 				tile_map.size_y = 0;
 				tile_map.chunk_size_x = 0;
 				tile_map.chunk_size_y = 0;
+				tile_map.properties = new PropertyMap();
 				tile_map.library = new TileLibrary();
 				tile_map.layer_info = new List<TileMapLayerInfo>();
 				tile_map.resources_dir = Converter.GetRelativeResourcesPath(settings.resources_dir);
@@ -210,6 +243,23 @@ namespace o2dtk
 								}
 
 								break;
+							case "properties":
+								while (reader.Read())
+								{
+									if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "properties")
+										break;
+
+									if (reader.NodeType == XmlNodeType.Element && reader.Name == "property")
+									{
+										string name = reader.GetAttribute("name");
+										string val = reader.GetAttribute("value");
+										if (val == null)
+											val = reader.ReadElementContentAsString();
+										tile_map.properties[name] = val;
+									}
+								}
+
+								break;
 							case "tileset":
 								int first_id = int.Parse(reader.GetAttribute("firstgid"));
 								int slice_size_x = 0;
@@ -224,10 +274,11 @@ namespace o2dtk
 								string source = reader.GetAttribute("source");
 								string image_path = "";
 								TileAnimation[] animations = null;
+								PropertyMap[] properties = null;
 
 								if (source == null)
 								{
-									ReadTilesetNode(reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color, ref animations);
+									ReadTilesetNode(reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color, ref animations, ref properties);
 
 									spacing_y = spacing_x;
 									margin_y = margin_x;
@@ -242,7 +293,7 @@ namespace o2dtk
 									while (tsx_reader.Read())
 										if (tsx_reader.NodeType == XmlNodeType.Element)
 											if (tsx_reader.Name == "tileset")
-													ReadTilesetNode(tsx_reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color, ref animations);
+													ReadTilesetNode(tsx_reader, ref slice_size_x, ref slice_size_y, ref spacing_x, ref margin_x, ref offset_x, ref offset_y, ref image_path, ref transparent_color, ref animations, ref properties);
 
 									spacing_y = spacing_x;
 									margin_y = margin_x;
@@ -260,6 +311,7 @@ namespace o2dtk
 										offset_x, offset_y,
 										transparent_color,
 										animations,
+										properties,
 										settings.tile_sets_dir,
 										settings.force_rebuild_tile_sets
 									);
@@ -279,69 +331,96 @@ namespace o2dtk
 
 								EditorUtility.DisplayProgressBar(progress_bar_title, "Reading data for layer '" + layer_info.name + "'", 0.0f);
 
-								if (settings.rebuild_chunks)
+								TileChunkDataLayer data_layer = new TileChunkDataLayer(tile_map.size_x, tile_map.size_y);
+
+								while (reader.Read())
 								{
-									TileChunkDataLayer data_layer = new TileChunkDataLayer(tile_map.size_x, tile_map.size_y);
+									if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "layer")
+										break;
 
-									while (reader.Read())
+									if (reader.NodeType == XmlNodeType.Element)
 									{
-										if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "layer")
-											break;
-
-										if (reader.NodeType == XmlNodeType.Element && reader.Name == "data")
+										switch (reader.Name)
 										{
-											string encoding = reader.GetAttribute("encoding");
-											string compression = reader.GetAttribute("compression");
+											case "data":
+												if (!settings.rebuild_chunks)
+													break;
 
-											if (encoding == "base64")
-											{
-												int bytes_total = 4 * tile_map.tiles_total;
-												byte[] buffer = new byte[bytes_total];
-												string base64 = reader.ReadElementContentAsString();
-												byte[] input = System.Convert.FromBase64String(base64);
+												string encoding = reader.GetAttribute("encoding");
+												string compression = reader.GetAttribute("compression");
 
-												if (compression == "zlib")
-													Utility.Decompress.Zlib(input, buffer, bytes_total);
-												else if (compression == "gzip")
-													Utility.Decompress.Gzip(input, buffer, bytes_total);
+												if (encoding == "base64")
+												{
+													int bytes_total = 4 * tile_map.tiles_total;
+													byte[] buffer = new byte[bytes_total];
+													string base64 = reader.ReadElementContentAsString();
+													byte[] input = System.Convert.FromBase64String(base64);
+
+													if (compression == "zlib")
+														Utility.Decompress.Zlib(input, buffer, bytes_total);
+													else if (compression == "gzip")
+														Utility.Decompress.Gzip(input, buffer, bytes_total);
+													else
+														buffer = input;
+
+													for (int i = 0; i < tile_map.tiles_total; ++i)
+														data_layer.ids[tile_map.FlipTileIndex(i)] =
+															buffer[4 * i] |
+															(buffer[4 * i + 1] << 8) |
+															(buffer[4 * i + 2] << 16) |
+															(buffer[4 * i + 3] << 24);
+												}
+												else if (encoding == "csv")
+												{
+													string[] indices = reader.ReadElementContentAsString().Split(new char[]{','});
+
+													for (int index = 0; index < tile_map.tiles_total; ++index)
+														data_layer.ids[tile_map.FlipTileIndex(index)] = (int)uint.Parse(indices[index]);
+												}
 												else
-													buffer = input;
+												{
+													int index = 0;
 
-												for (int i = 0; i < tile_map.tiles_total; ++i)
-													data_layer.ids[tile_map.FlipTileIndex(i)] =
-														buffer[4 * i] |
-														(buffer[4 * i + 1] << 8) |
-														(buffer[4 * i + 2] << 16) |
-														(buffer[4 * i + 3] << 24);
-											}
-											else if (encoding == "csv")
-											{
-												string[] indices = reader.ReadElementContentAsString().Split(new char[]{','});
+													while (reader.Read())
+													{
+														if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "data")
+															break;
 
-												for (int index = 0; index < tile_map.tiles_total; ++index)
-													data_layer.ids[tile_map.FlipTileIndex(index)] = (int)uint.Parse(indices[index]);
-											}
-											else
-											{
-												int index = 0;
+														if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
+														{
+															data_layer.ids[tile_map.FlipTileIndex(index)] = (int)uint.Parse(reader.GetAttribute("gid"));
+															++index;
+														}
+													}
+												}
+
+												break;
+											case "properties":
+												layer_info.properties = new PropertyMap();
 
 												while (reader.Read())
 												{
-													if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "data")
+													if (reader.NodeType == XmlNodeType.EndElement && reader.Name == "properties")
 														break;
 
-													if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
+													if (reader.NodeType == XmlNodeType.Element && reader.Name == "property")
 													{
-														data_layer.ids[tile_map.FlipTileIndex(index)] = (int)uint.Parse(reader.GetAttribute("gid"));
-														++index;
+														string name = reader.GetAttribute("name");
+														string val = reader.GetAttribute("value");
+														if (val == null)
+															val = reader.ReadElementContentAsString();
+														layer_info.properties[name] = val;
 													}
 												}
-											}
+
+												break;
+											default:
+												break;
 										}
 									}
-
-									data_layers.Add(data_layer);
 								}
+
+								data_layers.Add(data_layer);
 
 								tile_map.layer_info.Add(layer_info);
 

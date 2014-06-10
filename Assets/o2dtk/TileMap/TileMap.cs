@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using o2dtk.Collections;
 
 namespace o2dtk
 {
@@ -32,11 +33,15 @@ namespace o2dtk
 			// The size of each chunk of the map in tiles
 			public int chunk_size_x;
 			public int chunk_size_y;
+			// Any additionally specified properties
+			public PropertyMap properties;
 
 			// A library of the tile sets used by the tile map
 			public TileLibrary library;
 			// Information about each of the layers in the tile map
 			public List<TileMapLayerInfo> layer_info;
+			// Extra user data that should be loaded when the tile map is loaded
+			public List<ScriptableObject> user_data;
 
 			// The path to the resources folder used by the tile map
 			//   Chunks are located at this/chunks/x_y.asset

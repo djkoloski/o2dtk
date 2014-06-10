@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using o2dtk.Collections;
 
 namespace o2dtk
 {
@@ -52,6 +53,7 @@ namespace o2dtk
 				int offset_x, int offset_y,
 				int transparent_color,
 				TileAnimation[] animations,
+				PropertyMap[] properties,
 				string tile_sets_dir,
 				bool force_rebuild
 				)
@@ -85,6 +87,7 @@ namespace o2dtk
 				tile_set.tiles = new Sprite[tile_count];
 				tile_set.name = name;
 				tile_set.animations = animations;
+				tile_set.properties = properties;
 
 				bool reimport_required = false;
 				TextureImporter importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
@@ -237,6 +240,7 @@ namespace o2dtk
 						chunk.size_x = Mathf.Min(chunk_size_x, tile_map.size_x - pos_x);
 						chunk.size_y = Mathf.Min(chunk_size_y, tile_map.size_y - pos_y);
 						chunk.data_layers = new List<TileChunkDataLayer>();
+						chunk.user_data = new List<ScriptableObject>();
 
 						foreach (TileChunkDataLayer data_layer in layers)
 						{
