@@ -7,7 +7,8 @@ namespace Example
 {
 	public class BasicImportDelegate : TileMapImportDelegate
 	{
-		public void ImportTileMapObject(TileMapObject obj, TileMap tile_map)
+		public int random_int = 4;
+		public override void ImportTileMapObject(TileMapObject obj, TileMap tile_map)
 		{
 			Debug.Log("Object '" + obj.name + "'");
 			Debug.Log("Layer: '" + tile_map.layer_info[obj.layer_index].name + "'");

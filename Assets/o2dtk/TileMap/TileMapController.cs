@@ -32,7 +32,8 @@ namespace o2dtk
 			public Transform chunk_transform = null;
 
 			// Whether the controller has been initialized
-			public bool is_initialized = false;
+			[SerializeField]
+			private bool is_initialized = false;
 			public bool initialized
 			{
 				get
@@ -65,6 +66,8 @@ namespace o2dtk
 
 			public void Awake()
 			{
+				if (initialized)
+					Debug.LogWarning("Map initialized before play mode entered! You probably didn't mean to do this.");
 				Begin();
 			}
 
