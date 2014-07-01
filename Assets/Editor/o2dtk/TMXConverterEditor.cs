@@ -79,6 +79,7 @@ namespace o2dtk
 				if (Utility.GUI.Button("Import TMX"))
 				{
 					bool import = true;
+
 					TMXImportSettings settings = new TMXImportSettings();
 					settings.input_path = input_path;
 					settings.output_name = output_name;
@@ -91,21 +92,25 @@ namespace o2dtk
 					settings.output_dir = AssetDatabase.GetAssetPath(output_dir);
 					settings.tile_sets_dir = AssetDatabase.GetAssetPath(tile_sets_dir);
 					settings.resources_dir = Path.Combine(AssetDatabase.GetAssetPath(resources_dir), settings.output_name);
-					System.Type importer_type = importer.GetType();
-					if (importer_type != null)
+
+					if (importer != null)
 					{
-						if (importer_type.IsSubclassOf(typeof(TileMapImportDelegate)))
-							settings.importer = (TileMapImportDelegate)importer;
+						System.Type importer_type = importer.GetType();
+						if (importer_type != null)
+						{
+							if (importer_type.IsSubclassOf(typeof(TileMapImportDelegate)))
+								settings.importer = (TileMapImportDelegate)importer;
+							else
+							{
+								EditorUtility.DisplayDialog("Invalid import delegate", "Import delegate found in file ('" + importer_type.FullName + "') does not implement TileMapImportDelegate.", "OK");
+								import = false;
+							}
+						}
 						else
 						{
-							EditorUtility.DisplayDialog("Invalid import delegate", "Import delegate found in file ('" + importer_type.FullName + "') does not implement TileMapImportDelegate.", "OK");
+							EditorUtility.DisplayDialog("Invalid import delegate", "Import delegate file does not contain a valid import delegate", "OK");
 							import = false;
 						}
-					}
-					else
-					{
-						EditorUtility.DisplayDialog("Invalid import delegate", "Import delegate file does not contain a valid import delegate", "OK");
-						import = false;
 					}
 
 					if (import)
