@@ -9,6 +9,10 @@ namespace o2dtk
 	{
 		public class TileMapController : MonoBehaviour
 		{
+			// The colors to draw the gizmos with
+			public static Color gizmos_color_tile = new Color(0.5f, 0.5f, 0.5f, 1.0f);
+			public static Color gizmos_color_chunk = new Color(0.75f, 0.75f, 0.75f, 1.0f);
+			
 			// The tile map the controller will use
 			public TileMap tile_map = null;
 
@@ -64,11 +68,55 @@ namespace o2dtk
 				return new Vector2(GetXCoordinate(x, y), GetYCoordinate(x, y));
 			}
 
+			// Gets the coordinates of a tile in the space relative to the parent of the controller as a vector3
+			public Vector3 GetCoordinates3(int x, int y)
+			{
+				return new Vector3(GetXCoordinate(x, y), GetYCoordinate(x, y), 0.0f);
+			}
+
 			public void Awake()
 			{
 				if (initialized)
 					Debug.LogWarning("Map initialized before play mode entered! You probably didn't mean to do this.");
 				Begin();
+			}
+
+			public void OnDrawGizmos()
+			{
+				if (tile_map == null)
+					return;
+
+				Vector3 tile_delta = new Vector3(tile_map.major_delta_x + tile_map.minor_delta_x, tile_map.major_delta_y + tile_map.minor_delta_y, 0.0f) / pixels_per_unit / 2.0f;
+				Matrix4x4 gizmat = new Matrix4x4();
+				gizmat.SetTRS(-tile_delta, Quaternion.identity, Vector3.one);
+				
+				Gizmos.matrix = gizmat;
+
+				for (int y = 0; y <= tile_map.size_y; ++y)
+				{
+					for (int x = 0; x <= tile_map.size_x; ++x)
+					{
+						if (x < tile_map.size_x)
+						{
+							if (y % tile_map.chunk_size_y == 0)
+								Gizmos.color = gizmos_color_chunk;
+							else
+								Gizmos.color = gizmos_color_tile;
+
+							Gizmos.DrawLine(GetCoordinates(x, y), GetCoordinates(x + 1, y));
+						}
+
+						if (y < tile_map.size_y)
+						{
+							if (x % tile_map.chunk_size_x == 0)
+								Gizmos.color = gizmos_color_chunk;
+							else
+								Gizmos.color = gizmos_color_tile;
+
+							Gizmos.DrawLine(GetCoordinates(x, y), GetCoordinates(x, y + 1));
+						}
+					}
+				}
 			}
 
 			// Initializes the tile map controller
