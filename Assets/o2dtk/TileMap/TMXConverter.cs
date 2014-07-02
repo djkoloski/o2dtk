@@ -283,7 +283,7 @@ namespace o2dtk
 									image_path = Path.Combine(tsx_dir, image_path);
 								}
 
-								EditorUtility.DisplayProgressBar(progress_bar_title, "Importing tile set '" + Path.GetFileName(image_path) + "' with " + spacing_x + " by " + spacing_y + " tiles", 0.0f);
+								EditorUtility.DisplayProgressBar(progress_bar_title, "Importing tile set '" + Path.GetFileName(image_path) + "' with " + slice_size_x + " by " + slice_size_y + " tiles", 0.0f);
 
 								TileSet tile_set =
 									Converter.MakeTileSet(

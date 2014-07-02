@@ -71,6 +71,18 @@ namespace o2dtk
 					AssetDatabase.ImportAsset(dest_path);
 				}
 
+				TextureImporter importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
+
+				importer.textureType = TextureImporterType.Sprite;
+				importer.textureFormat = (transparent_color >= 0 ? TextureImporterFormat.ARGB32 : TextureImporterFormat.AutomaticTruecolor);
+				importer.spriteImportMode = SpriteImportMode.Multiple;
+				importer.filterMode = FilterMode.Point;
+				importer.spritePivot = Vector2.zero;
+				importer.spritePixelsToUnits = 1.0f;
+				importer.isReadable = (transparent_color >= 0);
+
+				AssetDatabase.ImportAsset(dest_path);
+
 				Texture2D atlas = AssetDatabase.LoadAssetAtPath(dest_path, typeof(Texture2D)) as Texture2D;
 
 				int tiles_x = (atlas.width - 2 * margin_x + spacing_x) / (slice_size_x + spacing_x);
@@ -90,7 +102,7 @@ namespace o2dtk
 				tile_set.properties = properties;
 
 				bool reimport_required = false;
-				TextureImporter importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
+				importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
 
 				importer.textureType = TextureImporterType.Sprite;
 				importer.textureFormat = (transparent_color >= 0 ? TextureImporterFormat.ARGB32 : TextureImporterFormat.AutomaticTruecolor);
@@ -165,7 +177,6 @@ namespace o2dtk
 
 				if (transparent_color >= 0)
 				{
-					//atlas = AssetDatabase.LoadAssetAtPath(dest_path, typeof(Texture2D)) as Texture2D;
 					int r = transparent_color >> 16;
 					int g = (transparent_color >> 8) & 0xFF;
 					int b = transparent_color & 0xFF;

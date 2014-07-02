@@ -78,6 +78,21 @@ namespace o2dtk
 
 				GUILayout.EndHorizontal();
 
+				// Load and Unload All buttons
+				GUILayout.BeginHorizontal();
+
+				if (GUILayout.Button("Load All Chunks"))
+					for (int i = 0; i < controller.tile_map.chunks_x; ++i)
+						for (int j = 0; j < controller.tile_map.chunks_y; ++j)
+							controller.LoadChunk(i,j);
+	
+				if (GUILayout.Button("Unload All Chunks"))
+					for (int i = 0; i < controller.tile_map.chunks_x; ++i)
+						for (int j = 0; j < controller.tile_map.chunks_y; ++j)
+							controller.UnloadChunk(i,j);
+
+				GUILayout.EndHorizontal();
+
 				GUI.enabled = true;
 			}
 		}
