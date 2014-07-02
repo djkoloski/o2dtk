@@ -11,25 +11,24 @@ namespace o2dtk
 		[System.Serializable]
 		public class TileMap : ScriptableObject
 		{
-			// The major delta of the tile map in pixels
-			// This is the amount advanced for each addition to the X coordinate of a tile
-			public int major_delta_x;
-			public int major_delta_y;
-			public int major_delta_z;
-			// The minor delta of the tile map in pixels
-			// This is the amount advanced for each addition to the Y coordinate of a tile
-			public int minor_delta_x;
-			public int minor_delta_y;
-			public int minor_delta_z;
-			// The even delta of the tile map in pixels
-			// This is the amount advanced if the Y coordinate of a tile is odd
-			public int odd_delta_x;
-			public int odd_delta_y;
-			public int odd_delta_z;
+			// The available tiling patterns maps may have
+			public enum Tiling
+			{
+				Rectangular,
+				Isometric,
+				Staggered
+			};
 
 			// The size of the tile map in tiles
 			public int size_x;
 			public int size_y;
+			// The tiling pattern of the map
+			public Tiling tiling;
+			public int precedence_scale_x;
+			public int precedence_scale_y;
+			// The size of the tiles in pixels
+			public int tile_size_x;
+			public int tile_size_y;
 			// The size of each chunk of the map in tiles
 			public int chunk_size_x;
 			public int chunk_size_y;
@@ -85,22 +84,60 @@ namespace o2dtk
 				return (size_y - index / size_x - 1) * size_x + index % size_x;
 			}
 
+			// Gets the X tiling coordinate of a tile given its X and Y
+			// This corresponds to the physical X location of the tile by mutliplying
+			// by the X size of the tile and dividing by 2
+			public int GetTilingXCoordinate(int x, int y)
+			{
+				switch (tiling)
+				{
+					case Tiling.Rectangular:
+						return 2 * x;
+					case Tiling.Isometric:
+						return y + x;
+					case Tiling.Staggered:
+						return 2 * x + (y % 2 == size_y % 2 ? 1 : 0);
+					default:
+						Debug.LogWarning("Unsupported tiling on tile map!");
+						return 0;
+				}
+			}
+
+			// Gets the Y tiling coordinate of a tile given its X and Y
+			// This corresponds to the physical Y location of the tile by mutliplying
+			// by the Y size of the tile and dividing by 2
+			public int GetTilingYCoordinate(int x, int y)
+			{
+				switch (tiling)
+				{
+					case Tiling.Rectangular:
+						return 2 * y;
+					case Tiling.Isometric:
+						return y - x;
+					case Tiling.Staggered:
+						return y;
+					default:
+						Debug.LogWarning("Unsupported tiling on tile map!");
+						return 0;
+				}
+			}
+
 			// Gets the X coordinate of a tile given its X and Y
 			public int GetLocalXCoordinate(int x, int y)
 			{
-				return x * major_delta_x + y * minor_delta_x + (y % 2 == 1 ? odd_delta_x : 0);
+				return GetTilingXCoordinate(x, y) * tile_size_x / 2;
 			}
 
 			// Gets the Y coordinate of a tile given its X and Y
 			public int GetLocalYCoordinate(int x, int y)
 			{
-				return x * major_delta_y + y * minor_delta_y + (y % 2 == 1 ? odd_delta_y : 0);
+				return GetTilingYCoordinate(x, y) * tile_size_y / 2;
 			}
 
-			// Gets the Z coordinate of a tile given its X and Y
-			public int GetLocalZCoordinate(int x, int y)
+			// Gets the precedence of a tile given its X and Y
+			public int GetPrecedence(int x, int y)
 			{
-				return x * major_delta_z + y * minor_delta_z + (y % 2 == 1 ? odd_delta_z : 0);
+				return GetTilingXCoordinate(x, y) * precedence_scale_x + GetTilingYCoordinate(x, y) * precedence_scale_y;
 			}
 
 			// Gets the local position of a tile given its X and Y

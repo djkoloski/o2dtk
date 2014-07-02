@@ -36,10 +36,10 @@ namespace o2dtk
 			public int chunk_size_x;
 			public int chunk_size_y;
 
-			// Whether to flip Z precedence along the major axis
-			public bool flip_major_precedence;
-			// Whether to flip Z precedence along the minor axis
-			public bool flip_minor_precedence;
+			// Whether to flip precedence along the X axis
+			public bool flip_precedence_x;
+			// Whether to flip Z precedence along the Y axis
+			public bool flip_precedence_y;
 
 			// The custom importer to use while importing objects
 			public TileMapImportDelegate importer;
@@ -56,8 +56,8 @@ namespace o2dtk
 				rebuild_chunks = false;
 				chunk_size_x = 0;
 				chunk_size_y = 0;
-				flip_major_precedence = false;
-				flip_minor_precedence = false;
+				flip_precedence_x = false;
+				flip_precedence_y = false;
 			}
 		}
 
@@ -204,43 +204,22 @@ namespace o2dtk
 								tile_map.chunk_size_x = settings.chunk_size_x;
 								tile_map.chunk_size_y = settings.chunk_size_y;
 
-								int tile_size_x = int.Parse(reader.GetAttribute("tilewidth"));
-								int tile_size_y = int.Parse(reader.GetAttribute("tileheight"));
+								tile_map.tile_size_x = int.Parse(reader.GetAttribute("tilewidth"));
+								tile_map.tile_size_y = int.Parse(reader.GetAttribute("tileheight"));
+
+								tile_map.precedence_scale_x = (settings.flip_precedence_x ? -1 : 1);
+								tile_map.precedence_scale_y = (settings.flip_precedence_y ? 1 : -1);
 
 								switch (reader.GetAttribute("orientation"))
 								{
 									case "orthogonal":
-										tile_map.major_delta_x = tile_size_x;
-										tile_map.major_delta_y = 0;
-										tile_map.major_delta_z = (settings.flip_major_precedence ? 1 : -1);
-										tile_map.minor_delta_x = 0;
-										tile_map.minor_delta_y = tile_size_y;
-										tile_map.minor_delta_z = (settings.flip_minor_precedence ? 1 : -1);
-										tile_map.odd_delta_x = 0;
-										tile_map.odd_delta_y = 0;
-										tile_map.odd_delta_z = 0;
+										tile_map.tiling = TileMap.Tiling.Rectangular;
 										break;
 									case "isometric":
-										tile_map.major_delta_x = tile_size_x / 2;
-										tile_map.major_delta_y = -tile_size_y / 2;
-										tile_map.major_delta_z = (settings.flip_major_precedence ? -1 : 1);
-										tile_map.minor_delta_x = tile_size_x / 2;
-										tile_map.minor_delta_y = tile_size_y / 2;
-										tile_map.minor_delta_z = (settings.flip_minor_precedence ? 1 : -1);
-										tile_map.odd_delta_x = 0;
-										tile_map.odd_delta_y = 0;
-										tile_map.odd_delta_z = 0;
+										tile_map.tiling = TileMap.Tiling.Isometric;
 										break;
 									case "staggered":
-										tile_map.major_delta_x = tile_size_x;
-										tile_map.major_delta_y = 0;
-										tile_map.major_delta_z = 0;
-										tile_map.minor_delta_x = 0;
-										tile_map.minor_delta_y = tile_size_y / 2;
-										tile_map.minor_delta_z = (settings.flip_minor_precedence ? 1 : -1);
-										tile_map.odd_delta_x = (tile_map.size_y % 2 == 0 ? -tile_size_x / 2 : tile_size_x / 2);
-										tile_map.odd_delta_y = 0;
-										tile_map.odd_delta_z = 0;
+										tile_map.tiling = TileMap.Tiling.Staggered;
 										break;
 									default:
 										return;

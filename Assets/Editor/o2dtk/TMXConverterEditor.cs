@@ -21,8 +21,8 @@ namespace o2dtk
 			public int chunk_size_x = 0;
 			public int chunk_size_y = 0;
 			// Whether to flip axis precedences
-			public bool flip_major_precedence = false;
-			public bool flip_minor_precedence = false;
+			public bool flip_precedence_x = false;
+			public bool flip_precedence_y = false;
 			// The directory to put the converted tile map in
 			public Object output_dir = null;
 			// The directory to put the tile sets in
@@ -70,9 +70,9 @@ namespace o2dtk
 
 				chunk_size_y = Utility.GUI.LabeledIntField("Chunk height:", chunk_size_y);
 
-				flip_major_precedence = Utility.GUI.LabeledToggle("Flip major (X) axis precedence", flip_major_precedence);
+				flip_precedence_x = Utility.GUI.LabeledToggle("Flip X axis precedence", flip_precedence_x);
 
-				flip_minor_precedence = Utility.GUI.LabeledToggle("Flip minor (Y) axis precedence", flip_minor_precedence);
+				flip_precedence_y = Utility.GUI.LabeledToggle("Flip Y axis precedence", flip_precedence_y);
 
 				importer = Utility.GUI.LabeledObjectField("Import delegate:", importer);
 
@@ -87,8 +87,8 @@ namespace o2dtk
 					settings.rebuild_chunks = rebuild_chunks;
 					settings.chunk_size_x = chunk_size_x;
 					settings.chunk_size_y = chunk_size_y;
-					settings.flip_major_precedence = flip_major_precedence;
-					settings.flip_minor_precedence = flip_minor_precedence;
+					settings.flip_precedence_x = flip_precedence_x;
+					settings.flip_precedence_y = flip_precedence_y;
 					settings.output_dir = AssetDatabase.GetAssetPath(output_dir);
 					settings.tile_sets_dir = AssetDatabase.GetAssetPath(tile_sets_dir);
 					settings.resources_dir = Path.Combine(AssetDatabase.GetAssetPath(resources_dir), settings.output_name);

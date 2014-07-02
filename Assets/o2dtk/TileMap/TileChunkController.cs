@@ -100,7 +100,7 @@ namespace o2dtk
 
 							SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
 							sr.sprite = use_sprite;
-							sr.sortingOrder = tile_map.GetLocalZCoordinate(map_pos_x, map_pos_y);
+							sr.sortingOrder = tile_map.GetPrecedence(map_pos_x, map_pos_y);
 							sr.color = new Color(1.0f, 1.0f, 1.0f, tile_map.layer_info[l].default_alpha);
 
 							if (tile_set.IsTileAnimated(local_id))
