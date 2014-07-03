@@ -94,13 +94,13 @@ namespace o2dtk
 
 							Transform sprite_transform = new_sprite.GetComponent<Transform>();
 							sprite_transform.parent = layer_transform;
-							sprite_transform.localPosition = tile_map.GetLocalCoordinates(map_pos_x, map_pos_y) + new Vector2(offset_x, offset_y);
+							sprite_transform.localPosition = tile_map.GetLocalCoordinates(map_pos_x, map_pos_y) + new Vector3(offset_x, offset_y, 0.0f);
 							sprite_transform.localScale = new Vector3((flip_horiz ? -1.0f : 1.0f), (flip_vert ? -1.0f : 1.0f), 1.0f);
 							sprite_transform.localRotation = Quaternion.Euler(0, 0, (flip_diag ? 90 : 0));
 
 							SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
 							sr.sprite = use_sprite;
-							sr.sortingOrder = tile_map.GetPrecedence(map_pos_x, map_pos_y);
+							sr.sortingOrder = l;
 							sr.color = new Color(1.0f, 1.0f, 1.0f, tile_map.layer_info[l].default_alpha);
 
 							if (tile_set.IsTileAnimated(local_id))

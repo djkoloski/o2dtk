@@ -135,15 +135,15 @@ namespace o2dtk
 			}
 
 			// Gets the precedence of a tile given its X and Y
-			public int GetPrecedence(int x, int y)
+			public int GetLocalZCoordinate(int x, int y)
 			{
 				return GetTilingXCoordinate(x, y) * precedence_scale_x + GetTilingYCoordinate(x, y) * precedence_scale_y;
 			}
 
 			// Gets the local position of a tile given its X and Y
-			public Vector2 GetLocalCoordinates(int x, int y)
+			public Vector3 GetLocalCoordinates(int x, int y)
 			{
-				return new Vector2(GetLocalXCoordinate(x, y), GetLocalYCoordinate(x, y));
+				return new Vector3(GetLocalXCoordinate(x, y), GetLocalYCoordinate(x, y), GetLocalZCoordinate(x, y));
 			}
 
 			// Gets the index of a certain chunk given its coordinates

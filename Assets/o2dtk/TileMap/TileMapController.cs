@@ -281,7 +281,7 @@ namespace o2dtk
 				render_transform = render_root.GetComponent<Transform>();
 				render_transform.parent = transform;
 				render_transform.localPosition = Vector3.zero;
-				render_transform.localScale = new Vector3(1.0f / pixels_per_unit, 1.0f / pixels_per_unit, 1.0f);
+				render_transform.localScale = Vector3.one / pixels_per_unit;
 
 				chunk_root = new GameObject("chunk_root");
 				chunk_transform = chunk_root.GetComponent<Transform>();
