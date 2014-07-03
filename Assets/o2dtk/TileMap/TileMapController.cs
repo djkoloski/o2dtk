@@ -53,29 +53,71 @@ namespace o2dtk
 			// Whether to draw gridlines for the chunks
 			public bool draw_chunk_gridlines = true;
 			public bool draw_tile_gridlines = true;
-
-			// Gets the X coordinate of a tile in the space relative to the parent of the controller
-			public float GetXCoordinate(int x, int y)
+			// When to draw gridlines (always, selected, or never)
+			public enum GridlinesDrawTime
 			{
-				return tile_map.GetLocalXCoordinate(x, y) / pixels_per_unit + transform.localPosition.x;
+				Always,
+				Selected,
+				Never
 			}
-
-			// Gets the Y coordinate of a tile in the space relative to the parent of the controller
-			public float GetYCoordinate(int x, int y)
+			public GridlinesDrawTime when_draw_gridlines = GridlinesDrawTime.Always;
+			// The 4x4 matrix that transforms world space into map space
+			public Matrix4x4 worldToMapMatrix
 			{
-				return tile_map.GetLocalYCoordinate(x, y) / pixels_per_unit + transform.localPosition.y;
+				get
+				{
+					return Matrix4x4.Scale(Vector3.one * pixels_per_unit) * transform.worldToLocalMatrix;
+				}
+			}
+			// The 4x4 matrix that transforms map space into world space
+			public Matrix4x4 mapToWorldMatrix
+			{
+				get
+				{
+					return transform.localToWorldMatrix * Matrix4x4.Scale(Vector3.one / pixels_per_unit);
+				}
 			}
 
 			// Gets the coordinates of a tile in the space relative to the parent of the controller
-			public Vector2 GetCoordinates(int x, int y)
+			public Vector3 GetWorldCoordinates(int x, int y)
 			{
-				return new Vector2(GetXCoordinate(x, y), GetYCoordinate(x, y));
+				return mapToWorldMatrix.MultiplyPoint(tile_map.GetLocalCoordinates(x, y));
 			}
 
-			// Gets the coordinates of a tile in the space relative to the parent of the controller as a vector3
-			public Vector3 GetCoordinates3(int x, int y)
+			// Gets the tile coordinates of the tile the given point lies in (the point is specified in world space)
+			public void GetTileCoordinates(Vector3 world_point, out int x, out int y)
 			{
-				return new Vector3(GetXCoordinate(x, y), GetYCoordinate(x, y), 0.0f);
+				Vector3 point = worldToMapMatrix.MultiplyPoint(world_point);
+				switch (tile_map.tiling)
+				{
+					case TileMap.Tiling.Rectangular:
+					{
+						point += new Vector3(tile_map.tile_size_x, tile_map.tile_size_y, 0.0f) / 2.0f;
+						x = (int)Mathf.Round(point.x) / tile_map.tile_size_x;
+						y = (int)Mathf.Round(point.y) / tile_map.tile_size_y;
+						break;
+					}
+					case TileMap.Tiling.Isometric:
+					{
+						x = (int)Mathf.Round(point.x / tile_map.tile_size_x - point.y / tile_map.tile_size_y);
+						y = (int)Mathf.Round(point.x / tile_map.tile_size_x + point.y / tile_map.tile_size_y);
+						break;
+					}
+					case TileMap.Tiling.Staggered:
+					{
+						// TODO Do this
+						x = 0;
+						y = 0;
+						break;
+					}
+					default:
+					{
+						Debug.LogWarning("Unsupported tiling on tile map!");
+						x = 0;
+						y = 0;
+						break;
+					}
+				}
 			}
 
 			public void Awake()
@@ -83,6 +125,18 @@ namespace o2dtk
 				if (initialized)
 					Debug.LogWarning("Map initialized before play mode entered! You probably didn't mean to do this.");
 				Begin();
+			}
+
+			public void OnDrawGizmos()
+			{
+				if (when_draw_gridlines == GridlinesDrawTime.Always)
+					DrawGridlineGizmos();
+			}
+
+			public void OnDrawGizmosSelected()
+			{
+				if (when_draw_gridlines == GridlinesDrawTime.Selected)
+					DrawGridlineGizmos();
 			}
 
 			void DrawStaggeredGizmoRow(float start_x, float start_y, float size_x, float size_y, int tiles, bool down)
@@ -114,21 +168,20 @@ namespace o2dtk
 				}
 			}
 
-			public void OnDrawGizmos()
+			public void DrawGridlineGizmos()
 			{
 				if (tile_map == null || !(draw_chunk_gridlines || draw_tile_gridlines))
 					return;
+
+				Matrix4x4 gizmat = new Matrix4x4();
+				Vector3 offset = new Vector3(tile_map.tile_size_x, (tile_map.tiling == TileMap.Tiling.Rectangular ? tile_map.tile_size_y : 0.0f), 0.0f) / -2.0f;
+				gizmat.SetTRS(offset, Quaternion.identity, Vector3.one);
+				Gizmos.matrix = mapToWorldMatrix * gizmat;
 
 				switch (tile_map.tiling)
 				{
 					case TileMap.Tiling.Rectangular:
 					{
-						Matrix4x4 gizmat = new Matrix4x4();
-						Vector3 offset = new Vector3(tile_map.tile_size_x, tile_map.tile_size_y, 0.0f) / -2.0f / pixels_per_unit;
-						float scale = 1.0f / pixels_per_unit;
-						gizmat.SetTRS(offset, Quaternion.identity, new Vector3(scale, scale, 1.0f));
-						Gizmos.matrix = transform.localToWorldMatrix * gizmat;
-
 						float x_max = tile_map.GetLocalXCoordinate(tile_map.size_x, 0);
 						float y_max = tile_map.GetLocalYCoordinate(0, tile_map.size_y);
 
@@ -166,12 +219,6 @@ namespace o2dtk
 					}
 					case TileMap.Tiling.Isometric:
 					{
-						Matrix4x4 gizmat = new Matrix4x4();
-						Vector3 offset = new Vector3(tile_map.tile_size_x, 0.0f, 0.0f) / -2.0f / pixels_per_unit;
-						float scale = 1.0f / pixels_per_unit;
-						gizmat.SetTRS(offset, Quaternion.identity, new Vector3(scale, scale, 1.0f));
-						Gizmos.matrix = transform.localToWorldMatrix * gizmat;
-
 						float x_max_x = tile_map.GetLocalXCoordinate(tile_map.size_x, 0);
 						float x_max_y = tile_map.GetLocalYCoordinate(tile_map.size_x, 0);
 						float y_max_x = tile_map.GetLocalXCoordinate(0, tile_map.size_y);
@@ -215,12 +262,6 @@ namespace o2dtk
 					// WOW this is complicated. Not sure if there's an easier way.
 					case TileMap.Tiling.Staggered:
 					{
-						Matrix4x4 gizmat = new Matrix4x4();
-						Vector3 offset = new Vector3(tile_map.tile_size_x, 0.0f, 0.0f) / -2.0f / pixels_per_unit;
-						float scale = 1.0f / pixels_per_unit;
-						gizmat.SetTRS(offset, Quaternion.identity, new Vector3(scale, scale, 1.0f));
-						Gizmos.matrix = transform.localToWorldMatrix * gizmat;
-
 						bool even = (tile_map.size_y % 2 == 0);
 
 						for (int y = 0; y <= tile_map.size_y; ++y)

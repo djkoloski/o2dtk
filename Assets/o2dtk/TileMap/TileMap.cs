@@ -137,7 +137,9 @@ namespace o2dtk
 			// Gets the precedence of a tile given its X and Y
 			public int GetLocalZCoordinate(int x, int y)
 			{
-				return GetTilingXCoordinate(x, y) * precedence_scale_x + GetTilingYCoordinate(x, y) * precedence_scale_y;
+				int x_max = (precedence_scale_x < 0 ? GetTilingXCoordinate(size_x, 0) * precedence_scale_x : 0);
+				int y_max = (precedence_scale_y < 0 ? GetTilingYCoordinate(0, size_y) * precedence_scale_y : 0);
+				return GetTilingXCoordinate(x, y) * precedence_scale_x + GetTilingYCoordinate(x, y) * precedence_scale_y - x_max - y_max;
 			}
 
 			// Gets the local position of a tile given its X and Y

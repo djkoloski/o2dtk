@@ -30,6 +30,8 @@ namespace o2dtk
 
 				controller.draw_tile_gridlines = Utility.GUI.LabeledToggle("Draw tile gridlines:", controller.draw_tile_gridlines);
 				controller.draw_chunk_gridlines = Utility.GUI.LabeledToggle("Draw chunk gridlines:", controller.draw_chunk_gridlines);
+				string[] gridline_options = {"Always", "Selected", "Never"};
+				controller.when_draw_gridlines = (TileMapController.GridlinesDrawTime)GUILayout.SelectionGrid((int)controller.when_draw_gridlines, gridline_options, gridline_options.Length);
 
 				GUILayout.BeginHorizontal();
 				if (GUILayout.Button("Begin Editing"))
@@ -95,6 +97,28 @@ namespace o2dtk
 
 				GUI.enabled = true;
 			}
+
+			/*
+			 * TODO use this to test staggered isometric world-to-tile mapping
+			public void OnSceneGUI()
+			{
+				Plane plane = new Plane(controller.transform.TransformDirection(Vector3.forward), controller.transform.position);
+				Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+				Vector3 hit = new Vector3();
+				float dist;
+
+				if (plane.Raycast(ray, out dist))
+				{
+					hit = ray.origin + (ray.direction.normalized * dist);
+				}
+
+				int x = 0;
+				int y = 0;
+
+				controller.GetTileCoordinates(hit, out x, out y);
+				Debug.Log("Position: " + x + "," + y);
+			}
+			 */
 		}
 	}
 }
