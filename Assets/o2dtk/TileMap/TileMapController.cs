@@ -20,7 +20,17 @@ namespace o2dtk
 			public float pixels_per_unit = 32.0f;
 
 			// The transform of the controller
-			public new Transform transform = null;
+			[SerializeField]
+			private Transform transform_ = null;
+			public new Transform transform
+			{
+				get
+				{
+					if (transform_ == null)
+						transform_ = GetComponent<Transform>();
+					return transform_;
+				}
+			}
 
 			// The chunks that are currently loaded
 			[System.Serializable]
@@ -313,8 +323,6 @@ namespace o2dtk
 			{
 				if (initialized || tile_map == null)
 					return;
-
-				transform = GetComponent<Transform>();
 
 				chunk_controllers = new ChunkControllerMap();
 

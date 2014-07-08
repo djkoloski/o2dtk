@@ -207,8 +207,8 @@ namespace o2dtk
 								tile_map.tile_size_x = int.Parse(reader.GetAttribute("tilewidth"));
 								tile_map.tile_size_y = int.Parse(reader.GetAttribute("tileheight"));
 
-								tile_map.precedence_scale_x = (settings.flip_precedence_x ? -1 : 1);
-								tile_map.precedence_scale_y = (settings.flip_precedence_y ? 1 : -1);
+								tile_map.precedence_scale_x = (settings.flip_precedence_x ? 1 : -1);
+								tile_map.precedence_scale_y = (settings.flip_precedence_y ? -1 : 1);
 
 								switch (reader.GetAttribute("orientation"))
 								{

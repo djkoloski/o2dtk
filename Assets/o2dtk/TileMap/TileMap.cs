@@ -137,9 +137,18 @@ namespace o2dtk
 			// Gets the precedence of a tile given its X and Y
 			public int GetLocalZCoordinate(int x, int y)
 			{
-				int x_max = (precedence_scale_x < 0 ? GetTilingXCoordinate(size_x, 0) * precedence_scale_x : 0);
-				int y_max = (precedence_scale_y < 0 ? GetTilingYCoordinate(0, size_y) * precedence_scale_y : 0);
-				return GetTilingXCoordinate(x, y) * precedence_scale_x + GetTilingYCoordinate(x, y) * precedence_scale_y - x_max - y_max;
+				switch (tiling)
+				{
+					case Tiling.Rectangular:
+						return x * precedence_scale_x + y * precedence_scale_y;
+					case Tiling.Isometric:
+						return x * precedence_scale_x + y * precedence_scale_y;
+					case Tiling.Staggered:
+						return x * (precedence_scale_x + precedence_scale_y) + (y / 2) * (precedence_scale_y - precedence_scale_x) + (y % 2 == 0 ? 0 : precedence_scale_y);
+					default:
+						Debug.LogWarning("Unsupported tiling on tile map!");
+						return 0;
+				}
 			}
 
 			// Gets the local position of a tile given its X and Y
