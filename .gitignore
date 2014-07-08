@@ -3,5 +3,6 @@
 /Temp
 /Assets/*
 !/Assets/Editor
-!/Assets/Examples
 !/Assets/o2dtk
+!/Assets/o2dtk_examples
+!/Assets/o2dtk_kits

@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="10" height="10" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="tmw_desert_spacing" tilewidth="32" tileheight="32" spacing="1" margin="1">
+  <image source="tmw_desert_spacing.png" trans="ff00ff" width="265" height="199"/>
+ </tileset>
+ <layer name="Tile Layer 1" width="10" height="10">
+  <data>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="46"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="32"/>
+   <tile gid="32"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="32"/>
+   <tile gid="32"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+   <tile gid="30"/>
+  </data>
+ </layer>
+ <objectgroup name="Object Layer 1" width="10" height="10">
+  <object name="o2dtk_collision_rocks" type="o2dtk_collision" x="128" y="128" width="64" height="64">
+   <properties>
+    <property name="o2dtk_collision" value="box"/>
+   </properties>
+  </object>
+  <object name="o2dtk_link_sign" type="o2dtk_link" x="32" y="32" width="32" height="32">
+   <properties>
+    <property name="o2dtk_link" value="prefab"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>
