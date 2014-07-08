@@ -7,14 +7,16 @@ public class PixelPerfectCamera : MonoBehaviour
 {
 	//Default Values
 	public float speed = 5.0f;
-	public int PixelsPerUnit = 32;
+	float PixelsPerUnit;
+	public float textureSize = 32f;
 	public Vector3 CachePosition = new Vector3(0,0,0);
 	public Vector3 RenderPosition = new Vector3(0,0,0);
 
 	void OnPreRender() 
 	{
 		CachePosition = transform.position;
-		//transform.position = RenderPosition = new Vector3(Mathf.Round(transform.position.x * PixelsPerUnit) / PixelsPerUnit, Mathf.Round(transform.position.y * PixelsPerUnit) / PixelsPerUnit, transform.position.z);
+		RenderPosition = new Vector3(Mathf.Round(CachePosition.x * textureSize) / textureSize, Mathf.Round(CachePosition.y * textureSize) / textureSize, CachePosition.z);
+		transform.position = RenderPosition;
 	}
 
 	void OnPostRender()
@@ -31,9 +33,9 @@ public class PixelPerfectCamera : MonoBehaviour
 		speed = EditorGUILayout.FloatField(speed);
 		GUILayout.EndHorizontal();
 		GUILayout.BeginHorizontal();
-		GUILayout.Label("Pixels Per Unit:");
+		GUILayout.Label("Texture Size:");
 		GUILayout.FlexibleSpace();
-		PixelsPerUnit = EditorGUILayout.IntField(PixelsPerUnit);
+		PixelsPerUnit = EditorGUILayout.FloatField(textureSize);
 		GUILayout.EndHorizontal();
 	}
 	
@@ -43,7 +45,8 @@ public class PixelPerfectCamera : MonoBehaviour
 		if (! camera.orthographic)
 			camera.orthographic = true;
 
-		camera.orthographicSize = Screen.height / (2 * PixelsPerUnit);
+		PixelsPerUnit = 1f / textureSize;
+		camera.orthographicSize = (Screen.height / 2f) * PixelsPerUnit;
 	}
 	
 	// Update is called once per frame
