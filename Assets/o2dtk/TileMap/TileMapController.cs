@@ -115,9 +115,44 @@ namespace o2dtk
 					}
 					case TileMap.Tiling.Staggered:
 					{
-						// TODO Do this
-						x = 0;
-						y = 0;
+						bool even = (tile_map.size_y % 2 == 0);
+						if (even)
+						{
+							point.y += tile_map.tile_size_y / 2.0f;
+							int even_x = (int)Mathf.Round(point.x) / tile_map.tile_size_x;
+							int even_y = (int)Mathf.Round(point.y) / tile_map.tile_size_y;
+							float diff_x = point.x - (even_x + 0.5f) * tile_map.tile_size_x;
+							float diff_y = point.y - (even_y + 0.5f) * tile_map.tile_size_y;
+							if (Mathf.Abs(diff_x) / tile_map.tile_size_x + Mathf.Abs(diff_y) / tile_map.tile_size_y > 0.5f)
+							{
+								x = even_x + (diff_x > 0.0f ? 1 : 0);
+								y = even_y * 2 + (diff_y > 0.0f ? 1 : -1);
+							}
+							else
+							{
+								x = even_x;
+								y = even_y * 2;
+							}
+						}
+						else
+						{
+							point.x += tile_map.tile_size_x / 2.0f;
+							point.y += tile_map.tile_size_y / 2.0f;
+							int odd_x = (int)Mathf.Round(point.x) / tile_map.tile_size_x;
+							int odd_y = (int)Mathf.Round(point.y) / tile_map.tile_size_y;
+							float diff_x = point.x - (odd_x + 0.5f) * tile_map.tile_size_x;
+							float diff_y = point.y - (odd_y + 0.5f) * tile_map.tile_size_y;
+							if (Mathf.Abs(diff_x) / tile_map.tile_size_x + Mathf.Abs(diff_y) / tile_map.tile_size_y > 0.5f)
+							{
+								x = odd_x + (diff_x > 0.0f ? 0 : -1);
+								y = odd_y * 2 + (diff_y > 0.0f ? 1 : -1);
+							}
+							else
+							{
+								x = odd_x;
+								y = odd_y * 2;
+							}
+						}
 						break;
 					}
 					default:

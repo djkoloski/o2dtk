@@ -97,28 +97,6 @@ namespace o2dtk
 
 				GUI.enabled = true;
 			}
-
-			/*
-			 * TODO use this to test staggered isometric world-to-tile mapping
-			public void OnSceneGUI()
-			{
-				Plane plane = new Plane(controller.transform.TransformDirection(Vector3.forward), controller.transform.position);
-				Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-				Vector3 hit = new Vector3();
-				float dist;
-
-				if (plane.Raycast(ray, out dist))
-				{
-					hit = ray.origin + (ray.direction.normalized * dist);
-				}
-
-				int x = 0;
-				int y = 0;
-
-				controller.GetTileCoordinates(hit, out x, out y);
-				Debug.Log("Position: " + x + "," + y);
-			}
-			 */
 		}
 	}
 }
