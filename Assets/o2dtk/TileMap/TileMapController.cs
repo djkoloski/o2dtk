@@ -394,6 +394,12 @@ namespace o2dtk
 				initialized = false;
 			}
 
+			// Determines whether the given chunk is loaded or not
+			public bool IsChunkLoaded(int index_x, int index_y)
+			{
+				return chunk_controllers.ContainsKey(tile_map.GetIndex(index_x, index_y));
+			}
+
 			// Loads the chunk at the given indices
 			public void LoadChunk(int index_x, int index_y)
 			{

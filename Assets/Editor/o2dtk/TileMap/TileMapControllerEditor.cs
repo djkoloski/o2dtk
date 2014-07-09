@@ -18,6 +18,36 @@ namespace o2dtk
 			int upper_bound = 0;
 			int right_bound = 0;
 
+			// GUI properties
+			// Whether the mouse is on the map
+			bool on_map = false;
+			// Whether the tile is a valid tile
+			bool valid_tile
+			{
+				get
+				{
+					return (tile_x >= 0 && tile_x < controller.tile_map.size_x && tile_y >= 0 && tile_y < controller.tile_map.size_y);
+				}
+			}
+			// The tile coordinates under the mouse
+			int tile_x = 0;
+			int tile_y = 0;
+			// Gets the chunk coordinates under the mouse
+			int chunk_x
+			{
+				get
+				{
+					return tile_x / controller.tile_map.chunk_size_x;
+				}
+			}
+			int chunk_y
+			{
+				get
+				{
+					return tile_y / controller.tile_map.chunk_size_y;
+				}
+			}
+
 			public void OnEnable()
 			{
 				controller = (TileMapController)target;
@@ -96,6 +126,119 @@ namespace o2dtk
 				GUILayout.EndHorizontal();
 
 				GUI.enabled = true;
+			}
+
+			public class ContextCommand
+			{
+				public string name;
+				public int tile_x;
+				public int tile_y;
+				public object arg;
+
+				public ContextCommand(string n, int x, int y, object a)
+				{
+					name = n;
+					tile_x = x;
+					tile_y = y;
+					arg = a;
+				}
+			}
+
+			public void ExecuteContext(object command_arg)
+			{
+				ContextCommand command = command_arg as ContextCommand;
+
+				switch (command.name)
+				{
+					case "begin_editing":
+						controller.Begin();
+						break;
+					case "end_editing":
+						controller.End();
+						break;
+					case "load_chunk":
+					{
+						int chunk_x = command.tile_x / controller.tile_map.chunk_size_x;
+						int chunk_y = command.tile_y / controller.tile_map.chunk_size_y;
+						controller.LoadChunk(chunk_x, chunk_y);
+						break;
+					}
+					case "unload_chunk":
+					{
+						int chunk_x = command.tile_x / controller.tile_map.chunk_size_x;
+						int chunk_y = command.tile_y / controller.tile_map.chunk_size_y;
+						controller.UnloadChunk(chunk_x, chunk_y);
+						break;
+					}
+					case "load_all_chunks":
+						for (int x = 0; x < controller.tile_map.chunks_x; ++x)
+							for (int y = 0; y < controller.tile_map.chunks_y; ++y)
+								controller.LoadChunk(x, y);
+						break;
+					case "unload_all_chunks":
+						for (int x = 0; x < controller.tile_map.chunks_x; ++x)
+							for (int y = 0; y < controller.tile_map.chunks_y; ++y)
+								controller.UnloadChunk(x, y);
+						break;
+					default:
+						Debug.LogWarning("Invalid context command argument!");
+						break;
+				}
+			}
+
+			public void OnSceneGUI()
+			{
+				Vector3 mouse_pos = new Vector3();
+				on_map = Utility.Editor.ProjectMousePosition(Vector3.forward, controller.transform, out mouse_pos);
+
+				bool needs_repaint = false;
+				if (on_map)
+				{
+					int old_x = tile_x;
+					int old_y = tile_y;
+					controller.GetTileCoordinates(mouse_pos, out tile_x, out tile_y);
+
+					if (old_x != tile_x || old_y != tile_y)
+						needs_repaint = true;
+				}
+
+				Handles.BeginGUI();
+				GUI.Label(new Rect(10, Screen.height - 60, 200, 20), "Tile: " + (on_map && valid_tile ? tile_x + ", " + tile_y : "undefined"));
+				GUI.Label(new Rect(10, Screen.height - 80, 200, 20), "Chunk: " + (on_map && valid_tile ? chunk_x + ", " + chunk_y : "undefined"));
+				Handles.EndGUI();
+
+				Event current = Event.current;
+
+				if (current.type == EventType.KeyDown && current.keyCode == KeyCode.Space && on_map)
+				{
+					GenericMenu menu = new GenericMenu();
+
+					if (!controller.initialized)
+						menu.AddItem(new GUIContent("Begin editing"), false, ExecuteContext, new ContextCommand("begin_editing", tile_x, tile_y, null));
+					else
+					{
+						if (controller.IsChunkLoaded(chunk_x, chunk_y))
+							menu.AddItem(new GUIContent("Unload chunk"), false, ExecuteContext, new ContextCommand("unload_chunk", tile_x, tile_y, null));
+						else
+							menu.AddItem(new GUIContent("Load chunk"), false, ExecuteContext, new ContextCommand("load_chunk", tile_x, tile_y, null));
+
+						menu.AddSeparator("");
+
+						menu.AddItem(new GUIContent("Chunks/Load all chunks"), false, ExecuteContext, new ContextCommand("load_all_chunks", tile_x, tile_y, null));
+						menu.AddItem(new GUIContent("Chunks/Unload all chunks"), false, ExecuteContext, new ContextCommand("unload_all_chunks", tile_x, tile_y, null));
+
+						menu.AddSeparator("");
+						menu.AddItem(new GUIContent("End editing"), false, ExecuteContext, new ContextCommand("end_editing", tile_x, tile_y, null));
+
+					}
+
+					menu.ShowAsContext();
+
+					current.Use();
+				}
+
+				if (needs_repaint)
+					SceneView.lastActiveSceneView.Repaint();
 			}
 		}
 	}
