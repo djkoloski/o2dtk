@@ -246,6 +246,8 @@ namespace o2dtk
 
 						TileChunk chunk = Utility.Asset.LoadAndEdit<TileChunk>(chunk_dest);
 
+						chunk.index_x = index_x;
+						chunk.index_y = index_y;
 						chunk.pos_x = pos_x;
 						chunk.pos_y = pos_y;
 						chunk.size_x = Mathf.Min(chunk_size_x, tile_map.size_x - pos_x);

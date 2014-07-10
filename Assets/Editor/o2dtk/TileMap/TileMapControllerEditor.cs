@@ -57,6 +57,8 @@ namespace o2dtk
 			{
 				controller.tile_map = (TileMap)Utility.GUI.LabeledObjectField("Tile map:", controller.tile_map, typeof(TileMap), false);
 				controller.pixels_per_unit = Utility.GUI.LabeledFloatField("Pixels per Unit:", controller.pixels_per_unit);
+				controller.render_intercept = (TileMapRenderIntercept)Utility.GUI.LabeledObjectField("Render intercept:", controller.render_intercept, typeof(TileMapRenderIntercept), false);
+				controller.update_intercept = (TileMapUpdateIntercept)Utility.GUI.LabeledObjectField("Update intercept:", controller.update_intercept, typeof(TileMapUpdateIntercept), false);
 
 				controller.draw_tile_gridlines = Utility.GUI.LabeledToggle("Draw tile gridlines:", controller.draw_tile_gridlines);
 				controller.draw_chunk_gridlines = Utility.GUI.LabeledToggle("Draw chunk gridlines:", controller.draw_chunk_gridlines);

@@ -9,6 +9,9 @@ namespace o2dtk
 		[System.Serializable]
 		public class TileChunk : ScriptableObject
 		{
+			// The index of the chunk
+			public int index_x;
+			public int index_y;
 			// The position of the chunk in tiles
 			public int pos_x;
 			public int pos_y;

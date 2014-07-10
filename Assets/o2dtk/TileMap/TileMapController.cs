@@ -9,15 +9,70 @@ namespace o2dtk
 	{
 		public class TileMapController : MonoBehaviour
 		{
+			// Static properties
+
 			// The colors to draw the gizmos with
 			public static Color gizmos_color_tile = new Color(0.5f, 0.5f, 0.5f, 1.0f);
 			public static Color gizmos_color_chunk = new Color(0.75f, 0.75f, 0.75f, 1.0f);
-			
+
+			// User properties
+
 			// The tile map the controller will use
 			public TileMap tile_map = null;
-
 			// The number of pixels per unit the controller should render at
 			public float pixels_per_unit = 32.0f;
+			// The render intercept to use (if any)
+			public TileMapRenderIntercept render_intercept = null;
+			// The update intercept to use (if any)
+			public TileMapUpdateIntercept update_intercept = null;
+
+			// Whether to draw gridlines for the chunks
+			public bool draw_chunk_gridlines = true;
+			public bool draw_tile_gridlines = true;
+			// When to draw gridlines (always, selected, or never)
+			public enum GridlinesDrawTime
+			{
+				Always,
+				Selected,
+				Never
+			}
+			public GridlinesDrawTime when_draw_gridlines = GridlinesDrawTime.Always;
+
+			// Public properties
+
+			// Whether the controller has been initialized
+			[SerializeField]
+			private bool is_initialized = false;
+			public bool initialized
+			{
+				get
+				{
+					return is_initialized;
+				}
+				private set
+				{
+					is_initialized = value;
+				}
+			}
+
+			// The 4x4 matrix that transforms world space into map space
+			public Matrix4x4 worldToMapMatrix
+			{
+				get
+				{
+					return Matrix4x4.Scale(Vector3.one * pixels_per_unit) * transform.worldToLocalMatrix;
+				}
+			}
+			// The 4x4 matrix that transforms map space into world space
+			public Matrix4x4 mapToWorldMatrix
+			{
+				get
+				{
+					return transform.localToWorldMatrix * Matrix4x4.Scale(Vector3.one / pixels_per_unit);
+				}
+			}
+
+			// Private properties
 
 			// The transform of the controller
 			[SerializeField]
@@ -40,53 +95,10 @@ namespace o2dtk
 
 			// The rendering root for the controller
 			public GameObject render_root = null;
-			public Transform render_transform = null;
+			public Transform render_root_transform = null;
 			// The chunk root for rendering
 			public GameObject chunk_root = null;
-			public Transform chunk_transform = null;
-
-			// Whether the controller has been initialized
-			[SerializeField]
-			private bool is_initialized = false;
-			public bool initialized
-			{
-				get
-				{
-					return is_initialized;
-				}
-				private set
-				{
-					is_initialized = value;
-				}
-			}
-
-			// Whether to draw gridlines for the chunks
-			public bool draw_chunk_gridlines = true;
-			public bool draw_tile_gridlines = true;
-			// When to draw gridlines (always, selected, or never)
-			public enum GridlinesDrawTime
-			{
-				Always,
-				Selected,
-				Never
-			}
-			public GridlinesDrawTime when_draw_gridlines = GridlinesDrawTime.Always;
-			// The 4x4 matrix that transforms world space into map space
-			public Matrix4x4 worldToMapMatrix
-			{
-				get
-				{
-					return Matrix4x4.Scale(Vector3.one * pixels_per_unit) * transform.worldToLocalMatrix;
-				}
-			}
-			// The 4x4 matrix that transforms map space into world space
-			public Matrix4x4 mapToWorldMatrix
-			{
-				get
-				{
-					return transform.localToWorldMatrix * Matrix4x4.Scale(Vector3.one / pixels_per_unit);
-				}
-			}
+			public Transform chunk_root_transform = null;
 
 			// Gets the coordinates of a tile in the space relative to the parent of the controller
 			public Vector3 GetWorldCoordinates(int x, int y)
@@ -362,16 +374,16 @@ namespace o2dtk
 				chunk_controllers = new ChunkControllerMap();
 
 				render_root = new GameObject("render_root");
-				render_transform = render_root.GetComponent<Transform>();
-				render_transform.parent = transform;
-				render_transform.localPosition = Vector3.zero;
-				render_transform.localScale = Vector3.one / pixels_per_unit;
+				render_root_transform = render_root.GetComponent<Transform>();
+				render_root_transform.parent = transform;
+				render_root_transform.localPosition = Vector3.zero;
+				render_root_transform.localScale = Vector3.one / pixels_per_unit;
 
 				chunk_root = new GameObject("chunk_root");
-				chunk_transform = chunk_root.GetComponent<Transform>();
-				chunk_transform.parent = render_transform;
-				chunk_transform.localPosition = Vector3.zero;
-				chunk_transform.localScale = Vector3.one;
+				chunk_root_transform = chunk_root.GetComponent<Transform>();
+				chunk_root_transform.parent = render_root_transform;
+				chunk_root_transform.localPosition = Vector3.zero;
+				chunk_root_transform.localScale = Vector3.one;
 
 				initialized = true;
 			}
@@ -387,9 +399,9 @@ namespace o2dtk
 
 				chunk_controllers = null;
 				render_root = null;
-				render_transform = null;
+				render_root_transform = null;
 				chunk_root = null;
-				chunk_transform = null;
+				chunk_root_transform = null;
 
 				initialized = false;
 			}
@@ -433,7 +445,7 @@ namespace o2dtk
 			{
 				GameObject chunk_go = new GameObject(index_x + "_" + index_y);
 				TileChunkController controller = chunk_go.AddComponent<TileChunkController>();
-				controller.LoadChunk(tile_map, chunk, index_x, index_y, chunk_transform);
+				controller.Initialize(this, chunk);
 				return controller;
 			}
 		}
