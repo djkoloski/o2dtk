@@ -89,7 +89,7 @@ namespace o2dtk
 
 			// The chunks that are currently loaded
 			[System.Serializable]
-			public class ChunkControllerMap : Map<int, TileChunkController>
+			public class ChunkControllerMap : Map<IPair, TileChunkController>
 			{ }
 			public ChunkControllerMap chunk_controllers = new ChunkControllerMap();
 
@@ -409,13 +409,13 @@ namespace o2dtk
 			// Determines whether the given chunk is loaded or not
 			public bool IsChunkLoaded(int index_x, int index_y)
 			{
-				return chunk_controllers.ContainsKey(tile_map.GetIndex(index_x, index_y));
+				return chunk_controllers.ContainsKey(new IPair(index_x, index_y));
 			}
 
 			// Loads the chunk at the given indices
 			public void LoadChunk(int index_x, int index_y)
 			{
-				int index = tile_map.GetIndex(index_x, index_y);
+				IPair index = new IPair(index_x, index_y);
 
 				if (chunk_controllers.ContainsKey(index))
 					return;
@@ -431,7 +431,7 @@ namespace o2dtk
 			// Unloads the chunk at the given coordinates
 			public void UnloadChunk(int index_x, int index_y)
 			{
-				int index = tile_map.GetIndex(index_x, index_y);
+				IPair index = new IPair(index_x, index_y);
 
 				if (chunk_controllers.ContainsKey(index))
 				{

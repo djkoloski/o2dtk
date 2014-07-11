@@ -17,26 +17,20 @@ namespace o2dtk
 			public new Transform transform;
 			// The sprites that must be updated regularly
 			[System.Serializable]
-			public class TileChunkEntryMap : Map<int, TileChunkUpdateEntry>
+			public class TileChunkEntryMap : Map<ITriple, TileChunkUpdateEntry>
 			{ }
 			public TileChunkEntryMap update_entries;
-
-			// Gets the index of a tile given its coordinates
-			public int GetTileIndex(int x, int y)
-			{
-				return y * chunk.size_x + x;
-			}
 
 			// Updates the chunk and its sprites
 			public void Update()
 			{
 				int milliseconds = (int)(Time.time * 1000);
 
-				foreach (KeyValuePair<int, TileChunkUpdateEntry> pair in update_entries)
+				foreach (KeyValuePair<ITriple, TileChunkUpdateEntry> pair in update_entries)
 				{
-					if (controller.update_intercept == null || !controller.update_intercept.InterceptTileUpdate(this, pair.Value))
+					if (controller.update_intercept == null || !controller.update_intercept.InterceptTileUpdate(this, pair.Key, pair.Value))
 					{
-						int id = pair.Value.global_id;
+						int id = chunk.data_layers[pair.Key.third].ids[pair.Key.second * chunk.size_x + pair.Key.first];
 						TileSet tile_set = controller.tile_map.library.GetTileSetAndIndex(ref id);
 						(pair.Value.user_data as SpriteRenderer).sprite = tile_set.tiles[tile_set.GetAnimatedTileIndex(id, milliseconds)];
 					}
@@ -44,9 +38,15 @@ namespace o2dtk
 			}
 
 			// Adds a tile chunk tile entry to the update list
-			public void AddUpdateEntry(TileChunkUpdateEntry entry)
+			public void AddUpdateEntry(int x, int y, int layer_index, TileChunkUpdateEntry entry)
 			{
-				update_entries.Add(GetTileIndex(entry.pos_x, entry.pos_y), entry);
+				update_entries.Add(new ITriple(x, y, layer_index), entry);
+			}
+
+			// Removes a tile chunk tile entry from the update list
+			public void RemoveUpdateEntry(int x, int y, int layer_index)
+			{
+				update_entries.Remove(new ITriple(x, y, layer_index));
 			}
 
 			// Initializes the chunk controller
@@ -88,35 +88,8 @@ namespace o2dtk
 							Vector3 local_scale = new Vector3((flip_horiz ? -1.0f : 1.0f), (flip_vert ? -1.0f : 1.0f), 1.0f);
 							Quaternion local_rotation = Quaternion.Euler(0, 0, (flip_diag ? 90 : 0));
 
-							if (controller.render_intercept == null || !controller.render_intercept.InterceptTileRender(this, layer_transform, local_position, local_rotation, local_scale, l, x, y, global_id))
-							{
-								int local_id = global_id;
-
-								TileSet tile_set = controller.tile_map.library.GetTileSetAndIndex(ref local_id);
-
-								if (tile_set == null)
-									continue;
-
-								Sprite use_sprite = tile_set.tiles[local_id];
-								int offset_x = tile_set.offset_x;
-								int offset_y = tile_set.offset_y;
-
-								GameObject new_sprite = new GameObject(x + "_" + y);
-
-								Transform sprite_transform = new_sprite.GetComponent<Transform>();
-								sprite_transform.parent = layer_transform;
-								sprite_transform.localPosition = local_position + new Vector3(offset_x, offset_y, 0.0f);
-								sprite_transform.localScale = local_scale;
-								sprite_transform.localRotation = local_rotation;
-
-								SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
-								sr.sprite = use_sprite;
-								sr.sortingOrder = l;
-								sr.color = new Color(1.0f, 1.0f, 1.0f, controller.tile_map.layer_info[l].default_alpha);
-
-								if (tile_set.IsTileAnimated(local_id))
-									AddUpdateEntry(new TileChunkUpdateEntry(x, y, new_sprite, global_id, sr as object));
-							}
+							if (controller.render_intercept == null || !controller.render_intercept.InterceptTileRender(this, layer_transform, local_position, local_rotation, local_scale, x, y, l, global_id))
+								RenderTile(this, layer_transform, local_position, local_rotation, local_scale, x, y, l, global_id);
 						}
 					}
 				}
@@ -124,6 +97,50 @@ namespace o2dtk
 				transform.parent = controller.chunk_root_transform;
 				transform.localPosition = Vector3.zero;
 				transform.localScale = Vector3.one;
+			}
+
+			// The default method in which tiles are rendered
+			public static GameObject RenderTile(
+				TileChunkController chunk_controller,
+				Transform layer_transform,
+				Vector3 local_position,
+				Quaternion local_rotation,
+				Vector3 local_scale,
+				int local_x,
+				int local_y,
+				int layer_index,
+				int global_id,
+				bool update_animated_tiles = true
+				)
+			{
+				int local_id = global_id;
+
+				TileSet tile_set = chunk_controller.controller.tile_map.library.GetTileSetAndIndex(ref local_id);
+
+				if (tile_set == null)
+					return null;
+
+				Sprite use_sprite = tile_set.tiles[local_id];
+				int offset_x = tile_set.offset_x;
+				int offset_y = tile_set.offset_y;
+
+				GameObject new_sprite = new GameObject(local_x + "_" + local_y);
+
+				Transform sprite_transform = new_sprite.GetComponent<Transform>();
+				sprite_transform.parent = layer_transform;
+				sprite_transform.localPosition = local_position + new Vector3(offset_x, offset_y, 0.0f);
+				sprite_transform.localScale = local_scale;
+				sprite_transform.localRotation = local_rotation;
+
+				SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
+				sr.sprite = use_sprite;
+				sr.sortingOrder = layer_index;
+				sr.color = new Color(1.0f, 1.0f, 1.0f, chunk_controller.controller.tile_map.layer_info[layer_index].default_alpha);
+
+				if (update_animated_tiles && tile_set.IsTileAnimated(local_id))
+					chunk_controller.AddUpdateEntry(local_x, local_y, layer_index, new TileChunkUpdateEntry(new_sprite, sr as object));
+
+				return new_sprite;
 			}
 		}
 	}

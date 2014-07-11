@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using o2dtk.Collections;
 
 namespace o2dtk
 {
@@ -12,7 +13,7 @@ namespace o2dtk
 			//   Returns whether the update was intercepted. If true is returned,
 			//   the default update is not run, if false is, the default update is
 			//   run on the tile entry
-			public virtual bool InterceptTileUpdate(TileChunkController chunk_controller, TileChunkUpdateEntry entry)
+			public virtual bool InterceptTileUpdate(TileChunkController chunk_controller, ITriple coords, TileChunkUpdateEntry entry)
 			{
 				return false;
 			}

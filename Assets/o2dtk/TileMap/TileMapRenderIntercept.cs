@@ -19,9 +19,9 @@ namespace o2dtk
 				Vector3 local_position,
 				Quaternion local_rotation,
 				Vector3 local_scale,
-				int layer_index,
 				int local_x,
 				int local_y,
+				int layer_index,
 				int global_id
 				)
 			{
