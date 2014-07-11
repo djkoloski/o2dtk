@@ -115,8 +115,8 @@ namespace o2dtk
 					case TileMap.Tiling.Rectangular:
 					{
 						point += new Vector3(tile_map.tile_size_x, tile_map.tile_size_y, 0.0f) / 2.0f;
-						x = (int)Mathf.Round(point.x) / tile_map.tile_size_x;
-						y = (int)Mathf.Round(point.y) / tile_map.tile_size_y;
+						x = Mathf.FloorToInt(point.x) / tile_map.tile_size_x - (point.x < 0 ? 1 : 0);
+						y = Mathf.FloorToInt(point.y) / tile_map.tile_size_y - (point.y < 0 ? 1 : 0);
 						break;
 					}
 					case TileMap.Tiling.Isometric:

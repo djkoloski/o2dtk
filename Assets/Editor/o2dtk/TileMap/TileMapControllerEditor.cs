@@ -37,14 +37,14 @@ namespace o2dtk
 			{
 				get
 				{
-					return tile_x / controller.tile_map.chunk_size_x;
+					return tile_x / controller.tile_map.chunk_size_x - (tile_x < 0 ? 1 : 0);
 				}
 			}
 			int chunk_y
 			{
 				get
 				{
-					return tile_y / controller.tile_map.chunk_size_y;
+					return tile_y / controller.tile_map.chunk_size_y - (tile_y < 0 ? 1 : 0);
 				}
 			}
 
@@ -160,16 +160,16 @@ namespace o2dtk
 						break;
 					case "load_chunk":
 					{
-						int chunk_x = command.tile_x / controller.tile_map.chunk_size_x;
-						int chunk_y = command.tile_y / controller.tile_map.chunk_size_y;
-						controller.LoadChunk(chunk_x, chunk_y);
+						int target_x = command.tile_x / controller.tile_map.chunk_size_x - (command.tile_x < 0 ? 1 : 0);
+						int target_y = command.tile_y / controller.tile_map.chunk_size_y - (command.tile_y < 0 ? 1 : 0);
+						controller.LoadChunk(target_x, target_y);
 						break;
 					}
 					case "unload_chunk":
 					{
-						int chunk_x = command.tile_x / controller.tile_map.chunk_size_x;
-						int chunk_y = command.tile_y / controller.tile_map.chunk_size_y;
-						controller.UnloadChunk(chunk_x, chunk_y);
+						int target_x = command.tile_x / controller.tile_map.chunk_size_x - (command.tile_x < 0 ? 1 : 0);
+						int target_y = command.tile_y / controller.tile_map.chunk_size_y - (command.tile_y < 0 ? 1 : 0);
+						controller.UnloadChunk(target_x, target_y);
 						break;
 					}
 					case "load_all_chunks":
@@ -205,8 +205,8 @@ namespace o2dtk
 				}
 
 				Handles.BeginGUI();
-				GUI.Label(new Rect(10, Screen.height - 60, 200, 20), "Tile: " + (on_map && valid_tile ? tile_x + ", " + tile_y : "undefined"));
-				GUI.Label(new Rect(10, Screen.height - 80, 200, 20), "Chunk: " + (on_map && valid_tile ? chunk_x + ", " + chunk_y : "undefined"));
+				GUI.Label(new Rect(10, Screen.height - 60, 200, 20), "Tile: " + tile_x + ", " + tile_y);
+				GUI.Label(new Rect(10, Screen.height - 80, 200, 20), "Chunk: " + chunk_x + ", " + chunk_y);
 				Handles.EndGUI();
 
 				Event current = Event.current;
@@ -226,8 +226,15 @@ namespace o2dtk
 
 						menu.AddSeparator("");
 
-						menu.AddItem(new GUIContent("Chunks/Load all chunks"), false, ExecuteContext, new ContextCommand("load_all_chunks", tile_x, tile_y, null));
-						menu.AddItem(new GUIContent("Chunks/Unload all chunks"), false, ExecuteContext, new ContextCommand("unload_all_chunks", tile_x, tile_y, null));
+						if (controller.tile_map.size_x >= 0)
+							menu.AddItem(new GUIContent("Chunks/Load all chunks"), false, ExecuteContext, new ContextCommand("load_all_chunks", tile_x, tile_y, null));
+						else
+							menu.AddDisabledItem(new GUIContent("Chunks/Load all chunks"));
+
+						if (controller.tile_map.size_y >= 0)
+							menu.AddItem(new GUIContent("Chunks/Unload all chunks"), false, ExecuteContext, new ContextCommand("unload_all_chunks", tile_x, tile_y, null));
+						else
+							menu.AddDisabledItem(new GUIContent("Chunks/Unload all chunks"));
 
 						menu.AddSeparator("");
 						menu.AddItem(new GUIContent("End editing"), false, ExecuteContext, new ContextCommand("end_editing", tile_x, tile_y, null));

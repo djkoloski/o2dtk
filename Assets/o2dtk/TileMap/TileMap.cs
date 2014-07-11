@@ -20,6 +20,7 @@ namespace o2dtk
 			};
 
 			// The size of the tile map in tiles
+			// A negative value indicates that the tile map is infinitely sized
 			public int size_x = 0;
 			public int size_y = 0;
 			// The tiling pattern of the map
