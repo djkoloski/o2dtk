@@ -15,56 +15,11 @@ namespace o2dtk
 			public TileChunk chunk;
 			// The transform of the chunk controller
 			public new Transform transform;
-			// The sprites that must be updated regularly
-			[System.Serializable]
-			public class TileChunkEntryMap : Map<int, TileChunkUpdateEntry>
-			{ }
-			public TileChunkEntryMap update_entries;
 
 			// Gets the index of the tile from its chunk x, y, and layer indices
-			public int GetTileIndex(int x, int y, int layer_index = 0)
+			public int GetTileID(int x, int y, int layer_index)
 			{
-				return ((layer_index * chunk.size_y) + y) * chunk.size_x + x;
-			}
-
-			// Gets the chunk x, y, and layer indices from the index of a tile
-			public void ReverseTileIndex(int index, out int x, out int y, out int layer_index)
-			{
-				x = index % chunk.size_x;
-				y = index / chunk.size_x % chunk.size_y;
-				layer_index = index / chunk.size_x / chunk.size_y;
-			}
-
-			// Updates the chunk and its sprites
-			public void Update()
-			{
-				int milliseconds = (int)(Time.time * 1000);
-
-				int x = 0;
-				int y = 0;
-				int layer_index = 0;
-				foreach (KeyValuePair<int, TileChunkUpdateEntry> pair in update_entries)
-				{
-					ReverseTileIndex(pair.Key, out x, out y, out layer_index);
-					if (map_controller.update_intercept == null || !map_controller.update_intercept.InterceptTileUpdate(this, x, y, layer_index, pair.Value))
-					{
-						int id = chunk.data_layers[layer_index].ids[GetTileIndex(x, y)];
-						TileSet tile_set = map_controller.tile_map.library.GetTileSetAndIndex(ref id);
-						(pair.Value.user_data as SpriteRenderer).sprite = tile_set.tiles[tile_set.GetAnimatedTileIndex(id, milliseconds)];
-					}
-				}
-			}
-
-			// Adds a tile chunk tile entry to the update list
-			public void AddUpdateEntry(int x, int y, int layer_index, TileChunkUpdateEntry entry)
-			{
-				update_entries.Add(GetTileIndex(x, y, layer_index), entry);
-			}
-
-			// Removes a tile chunk tile entry from the update list
-			public void RemoveUpdateEntry(int x, int y, int layer_index)
-			{
-				update_entries.Remove(GetTileIndex(x, y, layer_index));
+				return chunk.data_layers[layer_index].ids[y * chunk.size_x + x];
 			}
 
 			// Initializes the chunk controller
@@ -72,9 +27,7 @@ namespace o2dtk
 			{
 				map_controller = tile_map_controller;
 				chunk = tile_map_chunk;
-
 				transform = GetComponent<Transform>();
-				update_entries = new TileChunkEntryMap();
 
 				for (int l = 0; l < chunk.data_layers.Count; ++l)
 				{
@@ -124,7 +77,7 @@ namespace o2dtk
 				int local_y,
 				int layer_index,
 				int global_id,
-				bool update_animated_tiles = true
+				bool animate_tiles = true
 				)
 			{
 				TileMapController mc = chunk_controller.map_controller;
@@ -158,8 +111,14 @@ namespace o2dtk
 				sr.sortingOrder = layer_index;
 				sr.color = new Color(1.0f, 1.0f, 1.0f, mc.tile_map.layer_info[layer_index].default_alpha);
 
-				if (update_animated_tiles && tile_set.IsTileAnimated(local_id))
-					chunk_controller.AddUpdateEntry(local_x, local_y, layer_index, new TileChunkUpdateEntry(new_sprite, sr as object));
+				if (animate_tiles && tile_set.IsTileAnimated(local_id))
+				{
+					TileAnimator anim = new_sprite.AddComponent<TileAnimator>();
+					anim.pos_x = local_x;
+					anim.pos_y = local_y;
+					anim.layer_index = layer_index;
+					anim.chunk_controller = chunk_controller;
+				}
 
 				return new_sprite;
 			}

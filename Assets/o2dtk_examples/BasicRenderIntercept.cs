@@ -21,7 +21,9 @@ public class BasicRenderIntercept : TileMapRenderIntercept
 		SpriteRenderer sr = new_sprite.GetComponent<SpriteRenderer>();
 		sr.color = new Color(tint_color.r, tint_color.g, tint_color.b, sr.color.a);
 
-		chunk_controller.AddUpdateEntry(local_x, local_y, layer_index, new TileChunkUpdateEntry(new_sprite, sr as object));
+		BasicTileAnimator anim = new_sprite.AddComponent<BasicTileAnimator>();
+		anim.pos_x = local_x + chunk_controller.chunk.pos_x;
+		anim.pos_y = local_y + chunk_controller.chunk.pos_y;
 
 		return true;
 	}

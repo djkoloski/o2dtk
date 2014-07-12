@@ -23,8 +23,6 @@ namespace o2dtk
 			public float pixels_per_unit = 32.0f;
 			// The render intercept to use (if any)
 			public TileMapRenderIntercept render_intercept = null;
-			// The update intercept to use (if any)
-			public TileMapUpdateIntercept update_intercept = null;
 
 			// Whether to draw gridlines for the chunks
 			public bool draw_chunk_gridlines = true;
