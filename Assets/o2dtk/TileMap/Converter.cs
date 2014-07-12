@@ -9,7 +9,13 @@ namespace o2dtk
 {
 	namespace TileMap
 	{
-		class Converter
+		public class TileSetAnimationMap : Map<int, TileAnimation>
+		{ }
+
+		public class TileSetPropertyMap : Map<int, PropertyMap>
+		{ }
+
+		public class Converter
 		{
 			// Gets the new map index of a tile given its map index in a top-left origin
 			public static int PivotTopLeftOrigin(int map_index, int size_x, int size_y, TileMap.Origin new_origin)
@@ -64,8 +70,8 @@ namespace o2dtk
 				int slice_size_x, int slice_size_y,
 				int offset_x, int offset_y,
 				int transparent_color,
-				TileAnimation[] animations,
-				PropertyMap[] properties,
+				TileSetAnimationMap animations,
+				TileSetPropertyMap properties,
 				string tile_sets_dir,
 				bool force_rebuild
 				)
@@ -110,8 +116,12 @@ namespace o2dtk
 				tile_set.offset_y = offset_y;
 				tile_set.tiles = new Sprite[tile_count];
 				tile_set.name = name;
-				tile_set.animations = animations;
-				tile_set.properties = properties;
+				tile_set.animations = new TileAnimation[tiles_x * tiles_y];
+				foreach (KeyValuePair<int, TileAnimation> entry in animations)
+					tile_set.animations[entry.Key] = entry.Value;
+				tile_set.properties = new PropertyMap[tiles_x * tiles_y];
+				foreach (KeyValuePair<int, PropertyMap> entry in properties)
+					tile_set.properties[entry.Key] = entry.Value;
 
 				bool reimport_required = false;
 				importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
