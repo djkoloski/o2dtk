@@ -55,6 +55,39 @@ namespace o2dtk
 				}
 			}
 
+			// The 4x4 matrix that transforms world space into local space
+			public Matrix4x4 worldToLocalMatrix
+			{
+				get
+				{
+					return transform.worldToLocalMatrix;
+				}
+			}
+			// The 4x4 matrix that transforms world space into map space
+			public Matrix4x4 worldToMapMatrix
+			{
+				get
+				{
+					return localToMapMatrix * worldToLocalMatrix;
+				}
+			}
+			// The 4x4 matrix that transforms world space into normal space
+			public Matrix4x4 worldToNormalMatrix
+			{
+				get
+				{
+					return tile_map.mapToNormalMatrix * worldToMapMatrix;
+				}
+			}
+			
+			// The 4x4 matrix that transforms local space into world space
+			public Matrix4x4 localToWorldMatrix
+			{
+				get
+				{
+					return transform.localToWorldMatrix;
+				}
+			}
 			// The 4x4 matrix that transforms local space into map space
 			public Matrix4x4 localToMapMatrix
 			{
@@ -63,12 +96,21 @@ namespace o2dtk
 					return Matrix4x4.Scale(Vector3.one * pixels_per_unit);
 				}
 			}
-			// The 4x4 matrix that transforms world space into local space
-			public Matrix4x4 worldToLocalMatrix
+			// The 4x4 matrix that tarnsforms local space into normal space
+			public Matrix4x4 localToNormalMatrix
 			{
 				get
 				{
-					return transform.worldToLocalMatrix;
+					return tile_map.mapToNormalMatrix * localToMapMatrix;
+				}
+			}
+
+			// The 4x4 matrix that transforms map space into world space
+			public Matrix4x4 mapToWorldMatrix
+			{
+				get
+				{
+					return localToWorldMatrix * mapToLocalMatrix;
 				}
 			}
 			// The 4x4 matrix that transforms map space into world space
@@ -79,30 +121,49 @@ namespace o2dtk
 					return Matrix4x4.Scale(Vector3.one / pixels_per_unit);
 				}
 			}
-			// The 4x4 matrix that transforms local space into world space
-			public Matrix4x4 localToWorldMatrix
+			// The 4x4 matrix that transforms map space into normal space
+			public Matrix4x4 mapToNormalMatrix
 			{
 				get
 				{
-					return transform.localToWorldMatrix;
+					return tile_map.mapToNormalMatrix;
 				}
 			}
 
-			// The compound 4x4 matrix that transforms map space into world space
-			public Matrix4x4 mapToWorldMatrix
+			// The compound 4x4 matrix that transforms normal space into world space
+			public Matrix4x4 normalToWorldMatrix
 			{
 				get
 				{
-					return localToWorldMatrix * mapToLocalMatrix;
+					return mapToWorldMatrix * tile_map.normalToMapMatrix;
 				}
 			}
-			// The compound 4x4 matrix that transforms world space into map space
-			public Matrix4x4 worldToMapMatrix
+			// The compound 4x4 matrix that transforms normal space into local space
+			public Matrix4x4 normalToLocalMatrix
 			{
 				get
 				{
-					return localToMapMatrix * worldToLocalMatrix;
+					return mapToLocalMatrix * tile_map.normalToMapMatrix;
 				}
+			}
+			// The compound 4x4 matrix that transforms normal space into map space
+			public Matrix4x4 normalToMapMatrix
+			{
+				get
+				{
+					return tile_map.normalToMapMatrix;
+				}
+			}
+
+			// Gets the coordinates of a tile in normal space
+			public Vector3 TileToNormalSpace(int x, int y)
+			{
+				return tile_map.GetNormalCoordinates(x, y);
+			}
+			// Gets the tile of coordinates in normal space
+			public void NormalToTile(Vector3 normal_point, out int x, out int y)
+			{
+				tile_map.GetTileFromNormalPoint(normal_point, out x, out y);
 			}
 
 			// Private properties
@@ -132,126 +193,6 @@ namespace o2dtk
 			// The chunk root for rendering
 			public GameObject chunk_root = null;
 			public Transform chunk_root_transform = null;
-
-			// Gets the coordinates of a tile in normal space
-			public Vector3 TileToNormalPoint(int x, int y)
-			{
-				return tile_map.GetNormalCoordinates(x, y);
-			}
-
-			// Gets the coordinates of a tile in map space
-			public Vector3 TileToMapPoint(int x, int y)
-			{
-				return NormalToMapPoint(TileToNormalPoint(x, y));
-			}
-
-			// Gets the coordinates of a tile in local space
-			public Vector3 TileToLocalPoint(int x, int y)
-			{
-				return MapToLocalPoint(TileToMapPoint(x, y));
-			}
-
-			// Gets the coordinates of a tile in world space
-			public Vector3 TileToWorldPoint(int x, int y)
-			{
-				return LocalToWorldPoint(TileToLocalPoint(x, y));
-			}
-
-			// Gets the coordinates of a normal space point in map space
-			public Vector3 NormalToMapPoint(Vector3 normal_point)
-			{
-				return tile_map.normalToMapMatrix.MultiplyPoint(normal_point);
-			}
-
-			// Gets the coordinates of a normal space point in local space
-			public Vector3 NormalToLocalPoint(Vector3 normal_point)
-			{
-				return MapToLocalPoint(NormalToMapPoint(normal_point));
-			}
-
-			// Gets the coordinates of a normal space point in world space
-			public Vector3 NormalToWorldPoint(Vector3 normal_point)
-			{
-				return LocalToWorldPoint(NormalToLocalPoint(normal_point));
-			}
-
-			// Gets the coordinates of a map space point in local space
-			public Vector3 MapToLocalPoint(Vector3 map_point)
-			{
-				return mapToLocalMatrix.MultiplyPoint(map_point);
-			}
-
-			// Gets the coordinates of a map space point in world space
-			public Vector3 MapToWorldPoint(Vector3 map_point)
-			{
-				return LocalToWorldPoint(MapToLocalPoint(map_point));
-			}
-
-			// Gets the coordinates of a local space point in world space
-			public Vector3 LocalToWorldPoint(Vector3 local_point)
-			{
-				return localToWorldMatrix.MultiplyPoint(local_point);
-			}
-
-			// Gets the coordinates of a world space point in local space
-			public Vector3 WorldToLocalPoint(Vector3 world_point)
-			{
-				return worldToLocalMatrix.MultiplyPoint(world_point);
-			}
-
-			// Gets the coordinates of a world space point in map space
-			public Vector3 WorldToMapPoint(Vector3 world_point)
-			{
-				return LocalToMapPoint(WorldToLocalPoint(world_point));
-			}
-
-			// Gets the coordinates of a world space point in normal space
-			public Vector3 WorldToNormalPoint(Vector3 world_point)
-			{
-				return MapToNormalPoint(WorldToMapPoint(world_point));
-			}
-
-			// Gets the coordinates of a tile from a point in world space
-			public void WorldToTile(Vector3 world_point, out int x, out int y)
-			{
-				NormalToTile(WorldToNormalPoint(world_point), out x, out y);
-			}
-
-			// Gets the coordinates of a local space point in map space
-			public Vector3 LocalToMapPoint(Vector3 local_point)
-			{
-				return localToMapMatrix.MultiplyPoint(local_point);
-			}
-
-			// Gets the coordinates of a local space point in normal space
-			public Vector3 LocalToNormalPoint(Vector3 local_point)
-			{
-				return MapToNormalPoint(LocalToMapPoint(local_point));
-			}
-
-			// Gets the coordinates of a tile from a point in local space
-			public void LocalToTile(Vector3 local_point, out int x, out int y)
-			{
-				NormalToTile(LocalToNormalPoint(local_point), out x, out y);
-			}
-
-			// Gets the coordinates of a map space point in normal space
-			public Vector3 MapToNormalPoint(Vector3 map_point)
-			{
-				return tile_map.mapToNormalMatrix.MultiplyPoint(map_point);
-			}
-
-			// Gets the coordinates of a tile from a point in map space
-			public void MapToTile(Vector3 map_point, out int x, out int y)
-			{
-				NormalToTile(MapToNormalPoint(map_point), out x, out y);
-			}
-
-			// Gets the coordinates of a tile from a point in normal space
-			public void NormalToTile(Vector3 normal_point, out int x, out int y)
-			{
-				tile_map.GetTileFromNormalPoint(normal_point, out x, out y);
-			}
 
 			public void Awake()
 			{
@@ -290,7 +231,7 @@ namespace o2dtk
 				if (tile_map == null || !(draw_chunk_gridlines || draw_tile_gridlines))
 					return;
 				
-				Gizmos.matrix = mapToWorldMatrix * tile_map.normalToMapMatrix;
+				Gizmos.matrix = normalToWorldMatrix;
 
 				switch (tile_map.tiling)
 				{
@@ -301,61 +242,44 @@ namespace o2dtk
 						{
 							if (!ChooseGizmosColor(x % tile_map.chunk_size_x == 0))
 								continue;
-							Gizmos.DrawLine(new Vector3(x - 0.5f, tile_map.bottom - 0.5f, 0.0f), new Vector3(x - 0.5f, tile_map.top + 0.5f, 0.0f));
+							Gizmos.DrawLine(new Vector3(x, tile_map.bottom, 0.0f), new Vector3(x, tile_map.top + 1.0f, 0.0f));
 						}
 
 						for (int y = tile_map.bottom; y <= tile_map.top + 1; ++y)
 						{
 							if (!ChooseGizmosColor(y % tile_map.chunk_size_y == 0))
 								continue;
-							Gizmos.DrawLine(new Vector3(tile_map.left - 0.5f, y - 0.5f, 0.0f), new Vector3(tile_map.right + 0.5f, y - 0.5f, 0.0f));
-						}
-
-						break;
-					}
-					case TileMap.Tiling.StaggeredEven:
-					{
-						for (int x = tile_map.left; x <= tile_map.right; ++x)
-						{
-							for (int y = tile_map.bottom; y <= tile_map.top; ++y)
-							{
-								bool border_chunk_down = (y % tile_map.chunk_size_y == 0);
-								bool border_chunk_up = ((y + 1) % tile_map.chunk_size_y == 0);
-								bool border_chunk_left = (x % tile_map.chunk_size_x == 0) && (y % 2 != 0);
-								bool border_chunk_right = ((x + 1) % tile_map.chunk_size_x == 0) && (y % 2 == 0);
-
-								if (ChooseGizmosColor(border_chunk_down || border_chunk_left))
-									Gizmos.DrawLine(new Vector3(x + (y % 2 == 0 ? 0.5f : 0.0f), y / 2.0f - 0.5f, 0.0f), new Vector3(x - (y % 2 == 0 ? 0.0f : 0.5f), y / 2.0f, 0.0f));
-								if (ChooseGizmosColor(border_chunk_left || border_chunk_up))
-									Gizmos.DrawLine(new Vector3(x - (y % 2 == 0 ? 0.0f : 0.5f), y / 2.0f, 0.0f), new Vector3(x + (y % 2 == 0 ? 0.5f : 0.0f), y / 2.0f + 0.5f, 0.0f));
-								if (ChooseGizmosColor(border_chunk_up || border_chunk_right))
-									Gizmos.DrawLine(new Vector3(x + (y % 2 == 0 ? 0.5f : 0.0f), y / 2.0f + 0.5f, 0.0f), new Vector3(x + (y % 2 == 0 ? 1.0f : 0.5f), y / 2.0f, 0.0f));
-								if (ChooseGizmosColor(border_chunk_right || border_chunk_down))
-									Gizmos.DrawLine(new Vector3(x + (y % 2 == 0 ? 1.0f : 0.5f), y / 2.0f, 0.0f), new Vector3(x + (y % 2 == 0 ? 0.5f : 0.0f), y / 2.0f - 0.5f, 0.0f));
-							}
+							Gizmos.DrawLine(new Vector3(tile_map.left, y, 0.0f), new Vector3(tile_map.right + 1.0f, y, 0.0f));
 						}
 
 						break;
 					}
 					case TileMap.Tiling.StaggeredOdd:
+					case TileMap.Tiling.StaggeredEven:
 					{
+						float even_stagger = (tile_map.tiling == TileMap.Tiling.StaggeredOdd ? 0.0f : 0.5f);
+						float odd_stagger = (tile_map.tiling == TileMap.Tiling.StaggeredOdd ? 0.5f : 0.0f);
+						bool border_even = (tile_map.tiling == TileMap.Tiling.StaggeredOdd);
+
 						for (int x = tile_map.left; x <= tile_map.right; ++x)
 						{
 							for (int y = tile_map.bottom; y <= tile_map.top; ++y)
 							{
 								bool border_chunk_down = (y % tile_map.chunk_size_y == 0);
 								bool border_chunk_up = ((y + 1) % tile_map.chunk_size_y == 0);
-								bool border_chunk_left = (x % tile_map.chunk_size_x == 0) && (y % 2 == 0);
-								bool border_chunk_right = ((x + 1) % tile_map.chunk_size_x == 0) && (y % 2 != 0);
+								bool border_chunk_left = (x % tile_map.chunk_size_x == 0) && ((y % 2 == 0) == border_even);
+								bool border_chunk_right = ((x + 1) % tile_map.chunk_size_x == 0) && ((y % 2 == 0) != border_even);
+								float dx = x + (y % 2 == 0 ? even_stagger : odd_stagger);
+								float dy = y / 2.0f;
 
 								if (ChooseGizmosColor(border_chunk_down || border_chunk_left))
-									Gizmos.DrawLine(new Vector3(x + (y % 2 == 0 ? 0.0f : 0.5f), y / 2.0f - 0.5f, 0.0f), new Vector3(x - (y % 2 == 0 ? 0.5f : 0.0f), y / 2.0f, 0.0f));
+									Gizmos.DrawLine(new Vector3(dx + 0.5f, dy, 0.0f), new Vector3(dx, dy + 0.5f, 0.0f));
 								if (ChooseGizmosColor(border_chunk_left || border_chunk_up))
-									Gizmos.DrawLine(new Vector3(x - (y % 2 == 0 ? 0.5f : 0.0f), y / 2.0f, 0.0f), new Vector3(x + (y % 2 == 0 ? 0.0f : 0.5f), y / 2.0f + 0.5f, 0.0f));
+									Gizmos.DrawLine(new Vector3(dx, dy + 0.5f, 0.0f), new Vector3(dx + 0.5f, dy + 1.0f, 0.0f));
 								if (ChooseGizmosColor(border_chunk_up || border_chunk_right))
-									Gizmos.DrawLine(new Vector3(x + (y % 2 == 0 ? 0.0f : 0.5f), y / 2.0f + 0.5f, 0.0f), new Vector3(x + (y % 2 == 0 ? 0.5f : 1.0f), y / 2.0f, 0.0f));
+									Gizmos.DrawLine(new Vector3(dx + 0.5f, dy + 1.0f, 0.0f), new Vector3(dx + 1.0f, dy + 0.5f, 0.0f));
 								if (ChooseGizmosColor(border_chunk_right || border_chunk_down))
-									Gizmos.DrawLine(new Vector3(x + (y % 2 == 0 ? 0.5f : 1.0f), y / 2.0f, 0.0f), new Vector3(x + (y % 2 == 0 ? 0.0f : 0.5f), y / 2.0f - 0.5f, 0.0f));
+									Gizmos.DrawLine(new Vector3(dx + 1.0f, dy + 0.5f, 0.0f), new Vector3(dx + 0.5f, dy, 0.0f));
 							}
 						}
 

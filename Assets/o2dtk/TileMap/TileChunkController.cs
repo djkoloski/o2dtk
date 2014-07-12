@@ -127,9 +127,11 @@ namespace o2dtk
 				bool update_animated_tiles = true
 				)
 			{
+				TileMapController mc = chunk_controller.map_controller;
+
 				int local_id = global_id;
 
-				TileSet tile_set = chunk_controller.map_controller.tile_map.library.GetTileSetAndIndex(ref local_id);
+				TileSet tile_set = mc.tile_map.library.GetTileSetAndIndex(ref local_id);
 
 				if (tile_set == null)
 					return null;
@@ -143,8 +145,10 @@ namespace o2dtk
 				Transform sprite_transform = new_sprite.GetComponent<Transform>();
 				sprite_transform.parent = layer_transform;
 				sprite_transform.localPosition =
-					chunk_controller.map_controller.MapToLocalPoint(
-						chunk_controller.map_controller.TileToMapPoint(local_x + chunk_controller.chunk.pos_x, local_y + chunk_controller.chunk.pos_y) + new Vector3(offset_x, offset_y, 0.0f)
+					mc.mapToLocalMatrix.MultiplyPoint(
+						mc.normalToMapMatrix.MultiplyPoint(
+							mc.TileToNormalSpace(local_x + chunk_controller.chunk.pos_x, local_y + chunk_controller.chunk.pos_y) + new Vector3(0.5f, 0.5f, 0.0f)
+						) + new Vector3(offset_x, offset_y, 0.0f)
 					);
 				sprite_transform.localScale = scale;
 				sprite_transform.localRotation = rotation;
@@ -152,7 +156,7 @@ namespace o2dtk
 				SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
 				sr.sprite = use_sprite;
 				sr.sortingOrder = layer_index;
-				sr.color = new Color(1.0f, 1.0f, 1.0f, chunk_controller.map_controller.tile_map.layer_info[layer_index].default_alpha);
+				sr.color = new Color(1.0f, 1.0f, 1.0f, mc.tile_map.layer_info[layer_index].default_alpha);
 
 				if (update_animated_tiles && tile_set.IsTileAnimated(local_id))
 					chunk_controller.AddUpdateEntry(local_x, local_y, layer_index, new TileChunkUpdateEntry(new_sprite, sr as object));

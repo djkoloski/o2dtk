@@ -129,7 +129,7 @@ namespace o2dtk
 				{
 					int old_x = tile_x;
 					int old_y = tile_y;
-					controller.WorldToTile(mouse_pos, out tile_x, out tile_y);
+					controller.NormalToTile(controller.worldToNormalMatrix.MultiplyPoint(mouse_pos), out tile_x, out tile_y);
 
 					if (old_x != tile_x || old_y != tile_y)
 						needs_repaint = true;

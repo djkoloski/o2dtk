@@ -245,53 +245,30 @@ namespace o2dtk
 				switch (tiling)
 				{
 					case TileMap.Tiling.Rectangular:
-					{
-						x = (int)Mathf.Round(normal_point.x);
-						y = (int)Mathf.Round(normal_point.y);
-						break;
-					}
 					case TileMap.Tiling.Isometric:
 					{
-						x = (int)Mathf.Round(normal_point.x);
-						y = (int)Mathf.Round(normal_point.y);
+						x = Mathf.FloorToInt(normal_point.x);
+						y = Mathf.FloorToInt(normal_point.y);
 						break;
 					}
 					case TileMap.Tiling.StaggeredOdd:
-					{
-						normal_point.x += 0.5f;
-						normal_point.y += 0.5f;
-						int odd_x = (int)Mathf.Round(normal_point.x);
-						int odd_y = (int)Mathf.Round(normal_point.y);
-						float diff_x = normal_point.x - (odd_x + 0.5f);
-						float diff_y = normal_point.y - (odd_y + 0.5f);
-						if (Mathf.Abs(diff_x) + Mathf.Abs(diff_y) > 0.5f)
-						{
-							x = odd_x + (diff_x > 0.0f ? 0 : -1);
-							y = odd_y * 2 + (diff_y > 0.0f ? 1 : -1);
-						}
-						else
-						{
-							x = odd_x;
-							y = odd_y * 2;
-						}
-						break;
-					}
 					case TileMap.Tiling.StaggeredEven:
 					{
-						normal_point.y += 0.5f;
-						int even_x = (int)Mathf.Round(normal_point.x);
-						int even_y = (int)Mathf.Round(normal_point.y);
-						float diff_x = normal_point.x - (even_x + 0.5f);
-						float diff_y = normal_point.y - (even_y + 0.5f);
+						if (tiling == Tiling.StaggeredEven)
+							normal_point.x -= 0.5f;
+						int near_x = Mathf.FloorToInt(normal_point.x);
+						int near_y = Mathf.FloorToInt(normal_point.y);
+						float diff_x = normal_point.x - (near_x + 0.5f);
+						float diff_y = normal_point.y - (near_y + 0.5f);
 						if (Mathf.Abs(diff_x) + Mathf.Abs(diff_y) > 0.5f)
 						{
-							x = even_x + (diff_x > 0.0f ? 1 : 0);
-							y = even_y * 2 + (diff_y > 0.0f ? 1 : -1);
+							x = near_x + (diff_x > 0.0f ? 0 : -1) + (tiling == Tiling.StaggeredEven ? 1 : 0);
+							y = near_y * 2 + (diff_y > 0.0f ? 1 : -1);
 						}
 						else
 						{
-							x = even_x;
-							y = even_y * 2;
+							x = near_x;
+							y = near_y * 2;
 						}
 						break;
 					}
