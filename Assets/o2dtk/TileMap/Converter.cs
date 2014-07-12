@@ -11,6 +11,18 @@ namespace o2dtk
 	{
 		class Converter
 		{
+			// Gets the new map index of a tile given its map index in a top-left origin
+			public static int PivotTopLeftOrigin(int map_index, int size_x, int size_y, TileMap.Origin new_origin)
+			{
+				int x = map_index % size_x;
+				int y = map_index / size_x;
+				if (new_origin == TileMap.Origin.TopRight || new_origin == TileMap.Origin.BottomRight)
+					x = size_x - x - 1;
+				if (new_origin == TileMap.Origin.BottomLeft || new_origin == TileMap.Origin.BottomRight)
+					y = size_y - y - 1;
+				return y * size_x + x;
+			}
+
 			// Gets a path relative to the resources directory instead of the assets directory
 			public static string GetRelativeResourcesPath(string assets_path)
 			{
@@ -219,7 +231,14 @@ namespace o2dtk
 			}
 
 			// Creates and saves the chunks of a tile map to its resource directory
-			public static void BuildChunks(TileMap tile_map, List<TileChunkDataLayer> layers, int chunk_size_x, int chunk_size_y, string resources_dir, string progress_bar_title = null)
+			public static void BuildChunks(
+				TileMap tile_map,
+				List<TileChunkDataLayer> layers,
+				int chunk_size_x,
+				int chunk_size_y,
+				string resources_dir,
+				string progress_bar_title = null
+				)
 			{
 				string chunks_dir = resources_dir + "/" + "chunks";
 
@@ -228,30 +247,27 @@ namespace o2dtk
 
 				Directory.CreateDirectory(chunks_dir);
 
-				int pos_x = 0;
-				int pos_y = 0;
-
-				int index = 0;
-				while (pos_y < tile_map.size_y)
+				int count = 0;
+				for (int chunk_y = 0; chunk_y < tile_map.chunks_y; ++chunk_y)
 				{
-					while (pos_x < tile_map.size_x)
+					int index_y = chunk_y + tile_map.chunk_bottom;
+					for (int chunk_x = 0; chunk_x < tile_map.chunks_x; ++chunk_x)
 					{
-						int index_x = index % tile_map.chunks_x;
-						int index_y = index / tile_map.chunks_x;
+						int index_x = chunk_x + tile_map.chunk_left;
 
 						string chunk_dest = chunks_dir + "/" + index_x + "_" + index_y + ".asset";
 
 						if (progress_bar_title != null)
-							EditorUtility.DisplayProgressBar(progress_bar_title, "Building chunk " + (index + 1) + " / " + tile_map.chunks_total + ": " + index_x + "_" + index_y, (float)index / (float)(tile_map.chunks_total - 1));
+							EditorUtility.DisplayProgressBar(progress_bar_title, "Building chunk " + (count + 1) + " / " + tile_map.chunks_total + ": " + index_x + "_" + index_y, (float)count / (float)(tile_map.chunks_total - 1));
 
 						TileChunk chunk = Utility.Asset.LoadAndEdit<TileChunk>(chunk_dest);
 
 						chunk.index_x = index_x;
 						chunk.index_y = index_y;
-						chunk.pos_x = pos_x;
-						chunk.pos_y = pos_y;
-						chunk.size_x = Mathf.Min(chunk_size_x, tile_map.size_x - pos_x);
-						chunk.size_y = Mathf.Min(chunk_size_y, tile_map.size_y - pos_y);
+						chunk.pos_x = Mathf.Max(index_x * chunk_size_x, tile_map.left);
+						chunk.pos_y = Mathf.Max(index_y * chunk_size_y, tile_map.bottom);
+						chunk.size_x = Mathf.Min((index_x + 1) * chunk_size_x, tile_map.right + 1) - chunk.pos_x;
+						chunk.size_y = Mathf.Min((index_y + 1) * chunk_size_y, tile_map.top + 1) - chunk.pos_y;
 						chunk.data_layers = new List<TileChunkDataLayer>();
 						chunk.user_data = new List<ScriptableObject>();
 
@@ -261,17 +277,13 @@ namespace o2dtk
 
 							for (int y = 0; y < chunk.size_y; ++y)
 								for (int x = 0; x < chunk.size_x; ++x)
-									chunk_layer.ids[y * chunk.size_x + x] = data_layer.ids[(chunk.pos_y + y) * tile_map.size_x + chunk.pos_x + x];
+									chunk_layer.ids[y * chunk.size_x + x] = data_layer.ids[(chunk.pos_y - tile_map.bottom + y) * tile_map.size_x + chunk.pos_x - tile_map.left + x];
 
 							chunk.data_layers.Add(chunk_layer);
 						}
 
-						pos_x += chunk_size_x;
-						++index;
+						++count;
 					}
-
-					pos_x = 0;
-					pos_y += chunk_size_y;
 				}
 
 				EditorUtility.ClearProgressBar();

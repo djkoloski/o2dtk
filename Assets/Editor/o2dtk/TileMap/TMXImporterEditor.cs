@@ -20,6 +20,11 @@ namespace o2dtk
 			// The chunk size
 			public int chunk_size_x = 0;
 			public int chunk_size_y = 0;
+			// The origin to import the map with
+			public TileMap.Origin origin = TileMap.Origin.BottomLeft;
+			// The placement of the origin of the map
+			public int origin_x = 0;
+			public int origin_y = 0;
 			// Whether to flip axis precedences
 			public bool flip_precedence_x = false;
 			public bool flip_precedence_y = false;
@@ -70,6 +75,12 @@ namespace o2dtk
 
 				chunk_size_y = Utility.GUI.LabeledIntField("Chunk height:", chunk_size_y);
 
+				origin = (TileMap.Origin)Utility.GUI.LabeledEnumField("Map origin:", origin);
+
+				origin_x = Utility.GUI.LabeledIntField("Origin X:", origin_x);
+
+				origin_y = Utility.GUI.LabeledIntField("Origin Y:", origin_y);
+
 				flip_precedence_x = Utility.GUI.LabeledToggle("Flip X axis precedence", flip_precedence_x);
 
 				flip_precedence_y = Utility.GUI.LabeledToggle("Flip Y axis precedence", flip_precedence_y);
@@ -87,6 +98,9 @@ namespace o2dtk
 					settings.rebuild_chunks = rebuild_chunks;
 					settings.chunk_size_x = chunk_size_x;
 					settings.chunk_size_y = chunk_size_y;
+					settings.origin = origin;
+					settings.origin_x = origin_x;
+					settings.origin_y = origin_y;
 					settings.flip_precedence_x = flip_precedence_x;
 					settings.flip_precedence_y = flip_precedence_y;
 					settings.output_dir = AssetDatabase.GetAssetPath(output_dir);

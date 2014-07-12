@@ -19,9 +19,9 @@ public class BasicController : MonoBehaviour
 	{
 		controller.Begin();
 
-		for (int y = bottom; y < top; ++y)
+		for (int y = bottom; y <= top; ++y)
 		{
-			for (int x = left; x < right; ++x)
+			for (int x = left; x <= right; ++x)
 			{
 				controller.LoadChunk(x, y);
 			}

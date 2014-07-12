@@ -12,23 +12,10 @@ namespace o2dtk
 		{
 			// The controller currently being edited
 			public TileMapController controller = null;
-			//Some Integers
-			int lower_bound = 0;
-			int left_bound = 0;
-			int upper_bound = 0;
-			int right_bound = 0;
 
 			// GUI properties
 			// Whether the mouse is on the map
 			bool on_map = false;
-			// Whether the tile is a valid tile
-			bool valid_tile
-			{
-				get
-				{
-					return (tile_x >= 0 && tile_x < controller.tile_map.size_x && tile_y >= 0 && tile_y < controller.tile_map.size_y);
-				}
-			}
 			// The tile coordinates under the mouse
 			int tile_x = 0;
 			int tile_y = 0;
@@ -65,69 +52,10 @@ namespace o2dtk
 				string[] gridline_options = {"Always", "Selected", "Never"};
 				controller.when_draw_gridlines = (TileMapController.GridlinesDrawTime)GUILayout.SelectionGrid((int)controller.when_draw_gridlines, gridline_options, gridline_options.Length);
 
-				GUILayout.BeginHorizontal();
-				if (GUILayout.Button("Begin Editing"))
-					controller.Begin();
-				if (GUILayout.Button("End Editing"))
-					controller.End();
-				GUILayout.EndHorizontal();
-
 				if (controller.tile_map == null)
 					return;
 
-				GUI.enabled = controller.initialized;
-
-				// Input fields for the Bottom Left and Top Right Coordinates
-				GUILayout.Label("Chunk Loading and Unloading");
-				GUILayout.Label("Chunk Range: (0,0) - (" + controller.tile_map.chunks_x + "," + controller.tile_map.chunks_y + ")");
-
-				// Get the lower left bound chunk
-				GUILayout.BeginHorizontal();
-				GUILayout.Label("Bottom Left Chunk:");
-				GUILayout.FlexibleSpace();
-				left_bound = EditorGUILayout.IntField(left_bound);
-				lower_bound = EditorGUILayout.IntField(lower_bound);
-				GUILayout.EndHorizontal();
-
-				// Get the upper right bound chunk
-				GUILayout.BeginHorizontal();
-				GUILayout.Label("Top Right Chunk:");
-				GUILayout.FlexibleSpace();
-				right_bound = EditorGUILayout.IntField(right_bound);
-				upper_bound = EditorGUILayout.IntField(upper_bound);
-				GUILayout.EndHorizontal();
-
-				// Load and Unload buttons
-				GUILayout.BeginHorizontal();
-
-				if (GUILayout.Button("Load Chunks"))
-					for (int i = left_bound; i < right_bound; ++i)
-						for (int j = lower_bound; j < upper_bound; ++j)
-							controller.LoadChunk(i,j);
-	
-				if (GUILayout.Button("Unload Chunks"))
-					for (int i = left_bound; i < right_bound; ++i)
-						for (int j = lower_bound; j < upper_bound; ++j)
-							controller.UnloadChunk(i,j);
-
-				GUILayout.EndHorizontal();
-
-				// Load and Unload All buttons
-				GUILayout.BeginHorizontal();
-
-				if (GUILayout.Button("Load All Chunks"))
-					for (int i = 0; i < controller.tile_map.chunks_x; ++i)
-						for (int j = 0; j < controller.tile_map.chunks_y; ++j)
-							controller.LoadChunk(i,j);
-	
-				if (GUILayout.Button("Unload All Chunks"))
-					for (int i = 0; i < controller.tile_map.chunks_x; ++i)
-						for (int j = 0; j < controller.tile_map.chunks_y; ++j)
-							controller.UnloadChunk(i,j);
-
-				GUILayout.EndHorizontal();
-
-				GUI.enabled = true;
+				GUILayout.Label("Chunk Range: (" + controller.tile_map.chunk_left + "," + controller.tile_map.chunk_bottom + ") - (" + controller.tile_map.chunk_right + "," + controller.tile_map.chunk_top + ")");
 			}
 
 			public class ContextCommand
@@ -173,13 +101,13 @@ namespace o2dtk
 						break;
 					}
 					case "load_all_chunks":
-						for (int x = 0; x < controller.tile_map.chunks_x; ++x)
-							for (int y = 0; y < controller.tile_map.chunks_y; ++y)
+						for (int x = controller.tile_map.chunk_left; x <= controller.tile_map.chunk_right; ++x)
+							for (int y = controller.tile_map.chunk_bottom; y <= controller.tile_map.chunk_top; ++y)
 								controller.LoadChunk(x, y);
 						break;
 					case "unload_all_chunks":
-						for (int x = 0; x < controller.tile_map.chunks_x; ++x)
-							for (int y = 0; y < controller.tile_map.chunks_y; ++y)
+						for (int x = controller.tile_map.chunk_left; x <= controller.tile_map.chunk_right; ++x)
+							for (int y = controller.tile_map.chunk_bottom; y <= controller.tile_map.chunk_top; ++y)
 								controller.UnloadChunk(x, y);
 						break;
 					default:
@@ -190,6 +118,9 @@ namespace o2dtk
 
 			public void OnSceneGUI()
 			{
+				if (controller.tile_map == null)
+					return;
+
 				Vector3 mouse_pos = new Vector3();
 				on_map = Utility.Editor.ProjectMousePosition(Vector3.forward, controller.transform, out mouse_pos);
 
@@ -198,7 +129,7 @@ namespace o2dtk
 				{
 					int old_x = tile_x;
 					int old_y = tile_y;
-					controller.GetTileCoordinates(mouse_pos, out tile_x, out tile_y);
+					controller.WorldToTile(mouse_pos, out tile_x, out tile_y);
 
 					if (old_x != tile_x || old_y != tile_y)
 						needs_repaint = true;

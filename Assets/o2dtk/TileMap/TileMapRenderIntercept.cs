@@ -16,9 +16,8 @@ namespace o2dtk
 			public virtual bool InterceptTileRender(
 				TileChunkController chunk_controller,
 				Transform layer_transform,
-				Vector3 local_position,
-				Quaternion local_rotation,
-				Vector3 local_scale,
+				Quaternion rotation,
+				Vector3 scale,
 				int local_x,
 				int local_y,
 				int layer_index,

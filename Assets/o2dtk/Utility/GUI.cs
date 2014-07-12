@@ -102,7 +102,21 @@ namespace o2dtk
 				return value;
 			}
 
-			// Draws a labeled text field on a single horitonztal line
+			// Draws an enum selection field on a single horizontal line
+			public static System.Enum LabeledEnumField(string label, System.Enum value)
+			{
+				GUILayout.BeginHorizontal();
+
+				GUILayout.Label(label);
+				GUILayout.FlexibleSpace();
+				value = EditorGUILayout.EnumPopup(value);
+
+				GUILayout.EndHorizontal();
+
+				return value;
+			}
+
+			// Draws a labeled text field on a single horizontal line
 			public static string LabeledTextField(string label, string value)
 			{
 				GUILayout.BeginHorizontal();

@@ -9,16 +9,15 @@ public class BasicRenderIntercept : TileMapRenderIntercept
 	public override bool InterceptTileRender(
 		TileChunkController chunk_controller,
 		Transform layer_transform,
-		Vector3 local_position,
-		Quaternion local_rotation,
-		Vector3 local_scale,
+		Quaternion rotation,
+		Vector3 scale,
 		int local_x,
 		int local_y,
 		int layer_index,
 		int global_id
 		)
 	{
-		GameObject new_sprite = TileChunkController.RenderTile(chunk_controller, layer_transform, local_position, local_rotation, local_scale, local_x, local_y, layer_index, global_id, false);
+		GameObject new_sprite = TileChunkController.RenderTile(chunk_controller, layer_transform, rotation, scale, local_x, local_y, layer_index, global_id, false);
 		SpriteRenderer sr = new_sprite.GetComponent<SpriteRenderer>();
 		sr.color = new Color(tint_color.r, tint_color.g, tint_color.b, sr.color.a);
 

@@ -36,6 +36,11 @@ namespace o2dtk
 			public int chunk_size_x;
 			public int chunk_size_y;
 
+			// The desired origin position and map orientation
+			public TileMap.Origin origin;
+			// The place to put the origin of the tile map
+			public int origin_x;
+			public int origin_y;
 			// Whether to flip precedence along the X axis
 			public bool flip_precedence_x;
 			// Whether to flip Z precedence along the Y axis
@@ -56,6 +61,7 @@ namespace o2dtk
 				rebuild_chunks = false;
 				chunk_size_x = 0;
 				chunk_size_y = 0;
+				origin = TileMap.Origin.BottomLeft;
 				flip_precedence_x = false;
 				flip_precedence_y = false;
 			}
@@ -170,10 +176,6 @@ namespace o2dtk
 
 				TileMap tile_map = Utility.Asset.LoadAndEdit<TileMap>(output_path);
 
-				tile_map.size_x = 0;
-				tile_map.size_y = 0;
-				tile_map.chunk_size_x = 0;
-				tile_map.chunk_size_y = 0;
 				tile_map.properties = new PropertyMap();
 				tile_map.library = new TileLibrary();
 				tile_map.layer_info = new List<TileMapLayerInfo>();
@@ -193,8 +195,10 @@ namespace o2dtk
 							case "map":
 								EditorUtility.DisplayProgressBar(progress_bar_title, "Reading map data", 0.0f);
 
-								tile_map.size_x = int.Parse(reader.GetAttribute("width"));
-								tile_map.size_y = int.Parse(reader.GetAttribute("height"));
+								tile_map.left = -settings.origin_x;
+								tile_map.right = int.Parse(reader.GetAttribute("width")) - settings.origin_x - 1;
+								tile_map.bottom = -settings.origin_y;
+								tile_map.top = int.Parse(reader.GetAttribute("height")) - settings.origin_y - 1;
 
 								if (settings.chunk_size_x == 0)
 									settings.chunk_size_x = tile_map.size_x;
@@ -210,6 +214,8 @@ namespace o2dtk
 								tile_map.precedence_scale_x = (settings.flip_precedence_x ? 1 : -1);
 								tile_map.precedence_scale_y = (settings.flip_precedence_y ? -1 : 1);
 
+								tile_map.origin = settings.origin;
+
 								switch (reader.GetAttribute("orientation"))
 								{
 									case "orthogonal":
@@ -219,10 +225,27 @@ namespace o2dtk
 										tile_map.tiling = TileMap.Tiling.Isometric;
 										break;
 									case "staggered":
-										tile_map.tiling = TileMap.Tiling.Staggered;
+										bool odd = (settings.origin_x % 2 == 0);
+										switch (settings.origin)
+										{
+											case TileMap.Origin.BottomLeft:
+												if (tile_map.size_y % 2 == 0)
+													odd = !odd;
+												break;
+											case TileMap.Origin.BottomRight:
+												if (tile_map.size_y % 2 != 0)
+													odd = !odd;
+												break;
+											case TileMap.Origin.TopLeft:
+											case TileMap.Origin.TopRight:
+												break;
+											default:
+												throw new System.ArgumentException("Invalid desired origin");
+										}
+										tile_map.tiling = (odd ? TileMap.Tiling.StaggeredOdd : TileMap.Tiling.StaggeredEven);
 										break;
 									default:
-										return;
+										throw new System.ArgumentException("Invalid TMX attribute 'orientation'");
 								}
 
 								break;
@@ -347,7 +370,7 @@ namespace o2dtk
 														buffer = input;
 
 													for (int i = 0; i < tile_map.tiles_total; ++i)
-														data_layer.ids[tile_map.FlipTileIndex(i)] =
+														data_layer.ids[Converter.PivotTopLeftOrigin(i, tile_map.size_x, tile_map.size_y, tile_map.origin)] =
 															buffer[4 * i] |
 															(buffer[4 * i + 1] << 8) |
 															(buffer[4 * i + 2] << 16) |
@@ -358,7 +381,7 @@ namespace o2dtk
 													string[] indices = reader.ReadElementContentAsString().Split(new char[]{','});
 
 													for (int index = 0; index < tile_map.tiles_total; ++index)
-														data_layer.ids[tile_map.FlipTileIndex(index)] = (int)uint.Parse(indices[index]);
+														data_layer.ids[Converter.PivotTopLeftOrigin(index, tile_map.size_x, tile_map.size_y, tile_map.origin)] = (int)uint.Parse(indices[index]);
 												}
 												else
 												{
@@ -371,7 +394,7 @@ namespace o2dtk
 
 														if (reader.NodeType == XmlNodeType.Element && reader.Name == "tile")
 														{
-															data_layer.ids[tile_map.FlipTileIndex(index)] = (int)uint.Parse(reader.GetAttribute("gid"));
+															data_layer.ids[Converter.PivotTopLeftOrigin(index, tile_map.size_x, tile_map.size_y, tile_map.origin)] = (int)uint.Parse(reader.GetAttribute("gid"));
 															++index;
 														}
 													}

@@ -13,7 +13,7 @@ namespace o2dtk
 			//   Returns whether the update was intercepted. If true is returned,
 			//   the default update is not run, if false is, the default update is
 			//   run on the tile entry
-			public virtual bool InterceptTileUpdate(TileChunkController chunk_controller, ITriple coords, TileChunkUpdateEntry entry)
+			public virtual bool InterceptTileUpdate(TileChunkController chunk_controller, int x, int y, int layer_index, TileChunkUpdateEntry entry)
 			{
 				return false;
 			}
