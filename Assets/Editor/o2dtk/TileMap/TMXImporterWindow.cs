@@ -7,7 +7,7 @@ namespace o2dtk
 {
 	namespace TileMap
 	{
-		public class TMXImporterEditor : EditorWindow
+		public class TMXImporterWindow : EditorWindow
 		{
 			// The TMX file to convert from
 			string input_path = "";
@@ -40,7 +40,7 @@ namespace o2dtk
 			[MenuItem("Open 2D/Tile Maps/TMX Importer")]
 			public static void OpenTMXConverter()
 			{
-				EditorWindow.GetWindow(typeof(TMXImporterEditor), false, "TMX Importer", true);
+				EditorWindow.GetWindow(typeof(TMXImporterWindow), false, "TMX Importer", true);
 			}
 
 			public void OnGUI()
