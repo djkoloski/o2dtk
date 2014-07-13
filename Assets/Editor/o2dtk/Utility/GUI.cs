@@ -245,6 +245,12 @@ namespace o2dtk
 
 				return dir;
 			}
+
+			// Displays a notification on the currently-focused window
+			public static void Notify(string text)
+			{
+				EditorWindow.focusedWindow.ShowNotification(new GUIContent(text));
+			}
 		}
 	}
 }

@@ -24,14 +24,14 @@ namespace o2dtk
 			{
 				get
 				{
-					return tile_x / controller.tile_map.chunk_size_x - (tile_x < 0 ? 1 : 0);
+					return Utility.Math.FloorDivide(tile_x, controller.tile_map.chunk_size_x);
 				}
 			}
 			int chunk_y
 			{
 				get
 				{
-					return tile_y / controller.tile_map.chunk_size_y - (tile_y < 0 ? 1 : 0);
+					return Utility.Math.FloorDivide(tile_y, controller.tile_map.chunk_size_y);
 				}
 			}
 
@@ -60,16 +60,12 @@ namespace o2dtk
 			public class ContextCommand
 			{
 				public string name;
-				public int tile_x;
-				public int tile_y;
-				public object arg;
+				public object[] args;
 
-				public ContextCommand(string n, int x, int y, object a)
+				public ContextCommand(string n, object[] a)
 				{
 					name = n;
-					tile_x = x;
-					tile_y = y;
-					arg = a;
+					args = a;
 				}
 			}
 
@@ -79,6 +75,9 @@ namespace o2dtk
 
 				switch (command.name)
 				{
+					case "ping_chunk":
+						EditorGUIUtility.PingObject(controller.tile_map.GetChunk((int)command.args[0], (int)command.args[1]));
+						break;
 					case "begin_editing":
 						controller.Begin();
 						break;
@@ -87,16 +86,12 @@ namespace o2dtk
 						break;
 					case "load_chunk":
 					{
-						int target_x = command.tile_x / controller.tile_map.chunk_size_x - (command.tile_x < 0 ? 1 : 0);
-						int target_y = command.tile_y / controller.tile_map.chunk_size_y - (command.tile_y < 0 ? 1 : 0);
-						controller.LoadChunk(target_x, target_y);
+						controller.LoadChunk((int)command.args[0], (int)command.args[1]);
 						break;
 					}
 					case "unload_chunk":
 					{
-						int target_x = command.tile_x / controller.tile_map.chunk_size_x - (command.tile_x < 0 ? 1 : 0);
-						int target_y = command.tile_y / controller.tile_map.chunk_size_y - (command.tile_y < 0 ? 1 : 0);
-						controller.UnloadChunk(target_x, target_y);
+						controller.UnloadChunk((int)command.args[0], (int)command.args[1]);
 						break;
 					}
 					case "load_all_chunks":
@@ -146,28 +141,30 @@ namespace o2dtk
 					GenericMenu menu = new GenericMenu();
 
 					if (!controller.initialized)
-						menu.AddItem(new GUIContent("Begin editing"), false, ExecuteContext, new ContextCommand("begin_editing", tile_x, tile_y, null));
+						menu.AddItem(new GUIContent("Begin editing"), false, ExecuteContext, new ContextCommand("begin_editing", null));
 					else
 					{
 						if (controller.IsChunkLoaded(chunk_x, chunk_y))
-							menu.AddItem(new GUIContent("Unload chunk"), false, ExecuteContext, new ContextCommand("unload_chunk", tile_x, tile_y, null));
+							menu.AddItem(new GUIContent("Unload chunk"), false, ExecuteContext, new ContextCommand("unload_chunk", new object[2]{chunk_x, chunk_y}));
 						else
-							menu.AddItem(new GUIContent("Load chunk"), false, ExecuteContext, new ContextCommand("load_chunk", tile_x, tile_y, null));
+							menu.AddItem(new GUIContent("Load chunk"), false, ExecuteContext, new ContextCommand("load_chunk", new object[2]{chunk_x, chunk_y}));
+
+						menu.AddItem(new GUIContent("Ping chunk"), false, ExecuteContext, new ContextCommand("ping_chunk", new object[2]{chunk_x, chunk_y}));
 
 						menu.AddSeparator("");
 
 						if (controller.tile_map.size_x >= 0)
-							menu.AddItem(new GUIContent("Chunks/Load all chunks"), false, ExecuteContext, new ContextCommand("load_all_chunks", tile_x, tile_y, null));
+							menu.AddItem(new GUIContent("Chunks/Load all chunks"), false, ExecuteContext, new ContextCommand("load_all_chunks", null));
 						else
 							menu.AddDisabledItem(new GUIContent("Chunks/Load all chunks"));
 
 						if (controller.tile_map.size_y >= 0)
-							menu.AddItem(new GUIContent("Chunks/Unload all chunks"), false, ExecuteContext, new ContextCommand("unload_all_chunks", tile_x, tile_y, null));
+							menu.AddItem(new GUIContent("Chunks/Unload all chunks"), false, ExecuteContext, new ContextCommand("unload_all_chunks", null));
 						else
 							menu.AddDisabledItem(new GUIContent("Chunks/Unload all chunks"));
 
 						menu.AddSeparator("");
-						menu.AddItem(new GUIContent("End editing"), false, ExecuteContext, new ContextCommand("end_editing", tile_x, tile_y, null));
+						menu.AddItem(new GUIContent("End editing"), false, ExecuteContext, new ContextCommand("end_editing", null));
 
 					}
 

@@ -7,7 +7,7 @@ namespace o2dtk
 {
 	namespace Utility
 	{
-		class Decompress
+		public class Decompress
 		{
 			// ZLib-decompresses the requested number of bytes from the input array to the output array
 			//   and returns the number of bytes decompressed
