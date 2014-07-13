@@ -95,20 +95,24 @@ namespace o2dtk
 				float offset_x = tile_set.offset_x;
 				float offset_y = tile_set.offset_y;
 
-				Transform sprite_transform = new_sprite.GetComponent<Transform>();
-				sprite_transform.parent = layer_transform;
-				sprite_transform.localPosition =
+				Vector3 pos =
 					mc.mapToLocalMatrix.MultiplyPoint(
 						mc.normalToMapMatrix.MultiplyPoint(
 							mc.TileToNormalSpace(local_x + chunk_controller.chunk.pos_x, local_y + chunk_controller.chunk.pos_y) + new Vector3(0.5f, 0.5f, 0.0f)
 						) + new Vector3(offset_x, offset_y, 0.0f)
 					);
+
+				Transform sprite_transform = new_sprite.GetComponent<Transform>();
+				sprite_transform.parent = layer_transform;
+				sprite_transform.localPosition = new Vector3(pos.x, pos.y, 0.0f);
 				sprite_transform.localScale = scale;
 				sprite_transform.localRotation = rotation;
 
 				SpriteRenderer sr = new_sprite.AddComponent<SpriteRenderer>();
 				sr.sprite = use_sprite;
-				sr.sortingOrder = layer_index;
+				sr.sortingLayerID = mc.tile_map.layer_info[layer_index].unity_sorting_layer_unique_id;
+				sr.sortingLayerName = mc.tile_map.layer_info[layer_index].unity_sorting_layer_name;
+				sr.sortingOrder = (int)pos.z;
 				sr.color = new Color(1.0f, 1.0f, 1.0f, mc.tile_map.layer_info[layer_index].default_alpha);
 
 				if (animate_tiles && tile_set.IsTileAnimated(local_id))

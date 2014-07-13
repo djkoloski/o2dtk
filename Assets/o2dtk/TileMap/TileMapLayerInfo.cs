@@ -16,6 +16,11 @@ namespace o2dtk
 			// The properties of the layer
 			public PropertyMap properties;
 
+			// The name of the sorting layer this layer uses
+			public string unity_sorting_layer_name;
+			// The unique ID of the sorting layer this layer uses
+			public int unity_sorting_layer_unique_id;
+
 			// Default constructor
 			public TileMapLayerInfo()
 			{

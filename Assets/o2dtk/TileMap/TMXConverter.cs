@@ -338,6 +338,9 @@ namespace o2dtk
 								else
 									layer_info.default_alpha = 1.0f;
 
+								layer_info.unity_sorting_layer_unique_id = Utility.SortingLayers.StandardSortingLayerID(tile_map.layer_info.Count);
+								layer_info.unity_sorting_layer_name = Utility.SortingLayers.StandardSortingLayerName(tile_map.layer_info.Count);
+
 								EditorUtility.DisplayProgressBar(progress_bar_title, "Reading data for layer '" + layer_info.name + "'", 0.0f);
 
 								TileChunkDataLayer data_layer = new TileChunkDataLayer(tile_map.size_x, tile_map.size_y);
@@ -566,8 +569,7 @@ namespace o2dtk
 					Converter.BuildChunks(tile_map, data_layers, settings.chunk_size_x, settings.chunk_size_y, settings.resources_dir, progress_bar_title);
 
 				if (settings.importer != null)
-					foreach (TileMapObject obj in objects)
-						settings.importer.ImportTileMapObject(obj, tile_map);
+					settings.importer.ImportTileMapObjects(objects, tile_map);
 
 				EditorUtility.ClearProgressBar();
 			}

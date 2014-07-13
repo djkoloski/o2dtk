@@ -7,6 +7,17 @@ namespace o2dtk
 	namespace TileMap
 	{
 		[System.Serializable]
+		public class TileData
+		{
+			public PropertyMap properties;
+			public TileAnimation animation;
+		}
+
+		[System.Serializable]
+		public class TileDataMap : Map<int, TileData>
+		{ }
+
+		[System.Serializable]
 		public class TileSet : ScriptableObject
 		{
 			// The size of each tile in the tile set in pixels
@@ -19,26 +30,24 @@ namespace o2dtk
 			// The sprites in the tile set
 			public Sprite[] tiles;
 
-			// The properties of the sprites in the tile set
-			public PropertyMap[] properties;
-
-			// The animations in the tile set
-			//   A tile that is not animated has its respective entry set to null
-			public TileAnimation[] animations;
+			// Data for the tiles in the tile set
+			public TileDataMap tile_data;
 
 			// Determines whether a tile is animated
 			public bool IsTileAnimated(int id)
 			{
-				if (animations == null || id >= animations.Length)
+				if (!tile_data.ContainsKey(id))
 					return false;
 
-				return (animations[id] != null && animations[id].length > 0);
+				TileData data = tile_data[id];
+
+				return (data.animation != null && data.animation.length > 0);
 			}
 
 			// Gets the current local tile ID for an animated tile at a tile in milliseconds
 			public int GetAnimatedTileIndex(int id, int milliseconds)
 			{
-				return animations[id].GetKeyByTime(milliseconds).id;
+				return tile_data[id].animation.GetKeyByTime(milliseconds).id;
 			}
 		}
 	}

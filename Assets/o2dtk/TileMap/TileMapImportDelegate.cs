@@ -10,7 +10,7 @@ namespace o2dtk
 		{
 			// Takes in information about the objects in the tile map and creates
 			//   user data. The given tile map object belongs to the passed tile map
-			public virtual void ImportTileMapObject(TileMapObject obj, TileMap tile_map)
+			public virtual void ImportTileMapObjects(List<TileMapObject> objects, TileMap tile_map)
 			{ }
 		}
 	}

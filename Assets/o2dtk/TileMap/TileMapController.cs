@@ -91,7 +91,7 @@ namespace o2dtk
 			{
 				get
 				{
-					return Matrix4x4.Scale(Vector3.one * pixels_per_unit);
+					return Matrix4x4.Scale(new Vector3(pixels_per_unit, pixels_per_unit, 1.0f));
 				}
 			}
 			// The 4x4 matrix that tarnsforms local space into normal space
@@ -116,7 +116,7 @@ namespace o2dtk
 			{
 				get
 				{
-					return Matrix4x4.Scale(Vector3.one / pixels_per_unit);
+					return Matrix4x4.Scale(new Vector3(1.0f / pixels_per_unit, 1.0f / pixels_per_unit, 1.0f));
 				}
 			}
 			// The 4x4 matrix that transforms map space into normal space

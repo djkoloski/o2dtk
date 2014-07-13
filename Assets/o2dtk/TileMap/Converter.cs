@@ -116,12 +116,22 @@ namespace o2dtk
 				tile_set.offset_y = offset_y;
 				tile_set.tiles = new Sprite[tile_count];
 				tile_set.name = name;
-				tile_set.animations = new TileAnimation[tiles_x * tiles_y];
+
+				tile_set.tile_data = new TileDataMap();
+
 				foreach (KeyValuePair<int, TileAnimation> entry in animations)
-					tile_set.animations[entry.Key] = entry.Value;
-				tile_set.properties = new PropertyMap[tiles_x * tiles_y];
+				{
+					if (!tile_set.tile_data.ContainsKey(entry.Key))
+						tile_set.tile_data.Add(entry.Key, new TileData());
+					tile_set.tile_data[entry.Key].animation = entry.Value;
+				}
+
 				foreach (KeyValuePair<int, PropertyMap> entry in properties)
-					tile_set.properties[entry.Key] = entry.Value;
+				{
+					if (!tile_set.tile_data.ContainsKey(entry.Key))
+						tile_set.tile_data.Add(entry.Key, new TileData());
+					tile_set.tile_data[entry.Key].properties = entry.Value;
+				}
 
 				bool reimport_required = false;
 				importer = AssetImporter.GetAtPath(dest_path) as TextureImporter;
